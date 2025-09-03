@@ -1,78 +1,79 @@
-import { useState } from 'react'
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
-import { db } from '../config/firebase'
-import { useAuth } from '../contexts/AuthContext'
-import { useNotification } from '../contexts/NotificationContext'
-import LocationPicker from '../components/common/LocationPicker'
+import React from "react";
+import { useState } from "react";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../config/firebase";
+import { useAuth } from "../contexts/AuthContext";
+import { useNotification } from "../contexts/NotificationContext";
+import LocationPicker from "../components/common/LocationPicker";
 
 const DonatePage = () => {
-  const { currentUser, isGuest } = useAuth()
-  const { showSuccess, showError, notifyNewDonation } = useNotification()
+  const { currentUser, isGuest } = useAuth();
+  const { showSuccess, showError, notifyNewDonation } = useNotification();
 
   const [formData, setFormData] = useState({
-    foodItem: '',
-    quantity: '',
-    expirationDate: '',
-    description: '',
-    location: '',
-    contactInfo: '',
-    coordinates: null
-  })
-  const [loading, setLoading] = useState(false)
+    foodItem: "",
+    quantity: "",
+    expirationDate: "",
+    description: "",
+    location: "",
+    contactInfo: "",
+    coordinates: null,
+  });
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
+    const { name, value } = e.target;
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
-    }))
-  }
+      [name]: value,
+    }));
+  };
 
   const handleLocationSelect = (location, coordinates) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       location,
-      coordinates
-    }))
-  }
+      coordinates,
+    }));
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
       const donationData = {
         ...formData,
-        donorId: currentUser?.uid || 'guest',
-        donorName: currentUser?.email || 'Anonymous Donor',
+        donorId: currentUser?.uid || "guest",
+        donorName: currentUser?.email || "Anonymous Donor",
         isGuest: isGuest || !currentUser,
-        status: 'available',
+        status: "available",
         createdAt: serverTimestamp(),
         claimedBy: null,
-        claimedAt: null
-      }
+        claimedAt: null,
+      };
 
-      const docRef = await addDoc(collection(db, 'donations'), donationData)
-      
-      showSuccess('Your donation has been posted successfully!')
-      notifyNewDonation({ ...donationData, id: docRef.id })
-      
+      const docRef = await addDoc(collection(db, "donations"), donationData);
+
+      showSuccess("Your donation has been posted successfully!");
+      notifyNewDonation({ ...donationData, id: docRef.id });
+
       setFormData({
-        foodItem: '',
-        quantity: '',
-        expirationDate: '',
-        description: '',
-        location: '',
-        contactInfo: '',
-        coordinates: null
-      })
+        foodItem: "",
+        quantity: "",
+        expirationDate: "",
+        description: "",
+        location: "",
+        contactInfo: "",
+        coordinates: null,
+      });
     } catch (error) {
-      console.error('Error adding donation:', error)
-      showError('Failed to post donation. Please try again.')
+      console.error("Error adding donation:", error);
+      showError("Failed to post donation. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen py-12 px-4">
@@ -90,7 +91,10 @@ const DonatePage = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Food Item */}
             <div>
-              <label htmlFor="foodItem" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="foodItem"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Food Item *
               </label>
               <input
@@ -107,7 +111,10 @@ const DonatePage = () => {
 
             {/* Quantity */}
             <div>
-              <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="quantity"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Quantity/Servings *
               </label>
               <input
@@ -124,7 +131,10 @@ const DonatePage = () => {
 
             {/* Expiration Date */}
             <div>
-              <label htmlFor="expirationDate" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="expirationDate"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Expiration Date (Optional)
               </label>
               <input
@@ -134,13 +144,16 @@ const DonatePage = () => {
                 value={formData.expirationDate}
                 onChange={handleInputChange}
                 className="input w-full"
-                min={new Date().toISOString().split('T')[0]}
+                min={new Date().toISOString().split("T")[0]}
               />
             </div>
 
             {/* Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Description (Optional)
               </label>
               <textarea
@@ -170,7 +183,10 @@ const DonatePage = () => {
 
             {/* Contact Info */}
             <div>
-              <label htmlFor="contactInfo" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="contactInfo"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Contact Information *
               </label>
               <input
@@ -190,7 +206,9 @@ const DonatePage = () => {
 
             {/* Terms */}
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-medium text-gray-800 mb-2">Terms & Guidelines</h3>
+              <h3 className="font-medium text-gray-800 mb-2">
+                Terms & Guidelines
+              </h3>
               <ul className="text-sm text-gray-600 space-y-1">
                 <li>• Ensure food is safe and fresh</li>
                 <li>• Be available for pickup coordination</li>
@@ -202,10 +220,16 @@ const DonatePage = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading || !formData.foodItem || !formData.quantity || !formData.location || !formData.contactInfo}
+              disabled={
+                loading ||
+                !formData.foodItem ||
+                !formData.quantity ||
+                !formData.location ||
+                !formData.contactInfo
+              }
               className="w-full btn-primary py-3 text-lg"
             >
-              {loading ? 'Posting...' : '🎁 Post Donation'}
+              {loading ? "Posting..." : "🎁 Post Donation"}
             </button>
           </form>
 
@@ -213,14 +237,16 @@ const DonatePage = () => {
           {(isGuest || !currentUser) && (
             <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                💡 <strong>Tip:</strong> Create an account to manage your donations, track requests, and get notifications when someone claims your food.
+                💡 <strong>Tip:</strong> Create an account to manage your
+                donations, track requests, and get notifications when someone
+                claims your food.
               </p>
             </div>
           )}
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default DonatePage
+export default DonatePage;

@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
-import { useNotification } from '../../contexts/NotificationContext'
+import React from "react";
+import { useEffect } from "react";
+import { useNotification } from "../../contexts/NotificationContext";
 
 const NotificationToast = () => {
-  const { notifications, removeNotification } = useNotification()
+  const { notifications, removeNotification } = useNotification();
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-4">
@@ -14,61 +15,65 @@ const NotificationToast = () => {
         />
       ))}
     </div>
-  )
-}
+  );
+};
 
 const NotificationCard = ({ notification, onClose }) => {
   useEffect(() => {
     if (notification.duration !== 0) {
       const timer = setTimeout(() => {
-        onClose()
-      }, notification.duration || 5000)
-      
-      return () => clearTimeout(timer)
+        onClose();
+      }, notification.duration || 5000);
+
+      return () => clearTimeout(timer);
     }
-  }, [notification.duration, onClose])
+  }, [notification.duration, onClose]);
 
   const getIconAndColors = (type) => {
     switch (type) {
-      case 'success':
+      case "success":
         return {
-          icon: '✅',
-          bgColor: 'bg-success-50',
-          borderColor: 'border-success-200',
-          textColor: 'text-success-800',
-          iconColor: 'text-success-600'
-        }
-      case 'error':
+          icon: "✅",
+          bgColor: "bg-success-50",
+          borderColor: "border-success-200",
+          textColor: "text-success-800",
+          iconColor: "text-success-600",
+        };
+      case "error":
         return {
-          icon: '❌',
-          bgColor: 'bg-red-50',
-          borderColor: 'border-red-200',
-          textColor: 'text-red-800',
-          iconColor: 'text-red-600'
-        }
-      case 'info':
+          icon: "❌",
+          bgColor: "bg-red-50",
+          borderColor: "border-red-200",
+          textColor: "text-red-800",
+          iconColor: "text-red-600",
+        };
+      case "info":
         return {
-          icon: 'ℹ️',
-          bgColor: 'bg-blue-50',
-          borderColor: 'border-blue-200',
-          textColor: 'text-blue-800',
-          iconColor: 'text-blue-600'
-        }
+          icon: "ℹ️",
+          bgColor: "bg-blue-50",
+          borderColor: "border-blue-200",
+          textColor: "text-blue-800",
+          iconColor: "text-blue-600",
+        };
       default:
         return {
-          icon: 'ℹ️',
-          bgColor: 'bg-gray-50',
-          borderColor: 'border-gray-200',
-          textColor: 'text-gray-800',
-          iconColor: 'text-gray-600'
-        }
+          icon: "ℹ️",
+          bgColor: "bg-gray-50",
+          borderColor: "border-gray-200",
+          textColor: "text-gray-800",
+          iconColor: "text-gray-600",
+        };
     }
-  }
+  };
 
-  const { icon, bgColor, borderColor, textColor, iconColor } = getIconAndColors(notification.type)
+  const { icon, bgColor, borderColor, textColor, iconColor } = getIconAndColors(
+    notification.type
+  );
 
   return (
-    <div className={`max-w-sm w-full ${bgColor} border ${borderColor} rounded-lg shadow-lg p-4 transition-all duration-300 transform hover:scale-105`}>
+    <div
+      className={`max-w-sm w-full ${bgColor} border ${borderColor} rounded-lg shadow-lg p-4 transition-all duration-300 transform hover:scale-105`}
+    >
       <div className="flex items-start">
         <div className={`flex-shrink-0 ${iconColor} mr-3`}>
           <span className="text-lg">{icon}</span>
@@ -93,7 +98,7 @@ const NotificationCard = ({ notification, onClose }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default NotificationToast
+export default NotificationToast;

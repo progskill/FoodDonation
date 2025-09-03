@@ -1,14 +1,15 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { AuthProvider } from './contexts/AuthContext'
-import { NotificationProvider } from './contexts/NotificationContext'
-import Navbar from './components/layout/Navbar'
-import NotificationToast from './components/common/NotificationToast'
-import Home from './pages/Home'
-import DonatePage from './pages/DonatePage'
-import ReceivePage from './pages/ReceivePage'
-import DonationsPage from './pages/DonationsPage'
-import ProfilePage from './pages/ProfilePage'
-import AdminPage from './pages/AdminPage'
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
+import Navbar from "./components/layout/Navbar";
+import NotificationToast from "./components/common/NotificationToast";
+import Home from "./pages/Home";
+import DonatePage from "./pages/DonatePage";
+import ReceivePage from "./pages/ReceivePage";
+import DonationsPage from "./pages/DonationsPage";
+import ProfilePage from "./pages/ProfilePage";
+import AdminPage from "./pages/AdminPage";
 
 function App() {
   return (
@@ -32,7 +33,7 @@ function App() {
         </Router>
       </NotificationProvider>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;
