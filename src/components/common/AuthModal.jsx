@@ -1,60 +1,61 @@
-import { useState } from 'react'
-import { useAuth } from '../../contexts/AuthContext'
-import { useNotification } from '../../contexts/NotificationContext'
+import React from "react";
+import { useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import { useNotification } from "../../contexts/NotificationContext";
 
 const AuthModal = ({ onClose }) => {
-  const [isSignUp, setIsSignUp] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const { signUp, login, continueAsGuest } = useAuth()
-  const { showSuccess, showError } = useNotification()
+  const { signUp, login, continueAsGuest } = useAuth();
+  const { showSuccess, showError } = useNotification();
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     if (isSignUp && password !== confirmPassword) {
-      setError("Passwords don't match")
-      setLoading(false)
-      return
+      setError("Passwords don't match");
+      setLoading(false);
+      return;
     }
 
     try {
       if (isSignUp) {
-        await signUp(email, password)
-        showSuccess('Account created successfully!')
+        await signUp(email, password);
+        showSuccess("Account created successfully!");
       } else {
-        await login(email, password)
-        showSuccess('Signed in successfully!')
+        await login(email, password);
+        showSuccess("Signed in successfully!");
       }
-      onClose()
+      onClose();
     } catch (error) {
-      setError(error.message)
-      showError(error.message)
+      setError(error.message);
+      showError(error.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleGuestContinue = () => {
-    continueAsGuest()
-    showSuccess('You can now use all features as a guest!')
-    onClose()
-  }
+    continueAsGuest();
+    showSuccess("You can now use all features as a guest!");
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">
-            {isSignUp ? 'Create Account' : 'Sign In'}
+            {isSignUp ? "Create Account" : "Sign In"}
           </h2>
-          <button 
+          <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl"
           >
@@ -87,7 +88,10 @@ const AuthModal = ({ onClose }) => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Email
             </label>
             <input
@@ -101,7 +105,10 @@ const AuthModal = ({ onClose }) => {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Password
             </label>
             <input
@@ -117,7 +124,10 @@ const AuthModal = ({ onClose }) => {
 
           {isSignUp && (
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Confirm Password
               </label>
               <input
@@ -136,7 +146,7 @@ const AuthModal = ({ onClose }) => {
             disabled={loading}
             className="w-full btn-primary py-3"
           >
-            {loading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Sign In')}
+            {loading ? "Loading..." : isSignUp ? "Create Account" : "Sign In"}
           </button>
         </form>
 
@@ -145,12 +155,14 @@ const AuthModal = ({ onClose }) => {
             onClick={() => setIsSignUp(!isSignUp)}
             className="text-primary-600 hover:text-primary-700 text-sm"
           >
-            {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+            {isSignUp
+              ? "Already have an account? Sign In"
+              : "Need an account? Sign Up"}
           </button>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AuthModal
+export default AuthModal;
