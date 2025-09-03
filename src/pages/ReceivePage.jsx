@@ -1,66 +1,76 @@
-import { useState, useEffect } from 'react'
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
-import { db } from '../config/firebase'
-import { useAuth } from '../contexts/AuthContext'
-import DonationCard from '../components/common/DonationCard'
-import SearchFilters from '../components/common/SearchFilters'
-import RequestForm from '../components/common/RequestForm'
+import React from "react";
+import { useState, useEffect } from "react";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+} from "firebase/firestore";
+import { db } from "../config/firebase";
+import { useAuth } from "../contexts/AuthContext";
+import DonationCard from "../components/common/DonationCard";
+import SearchFilters from "../components/common/SearchFilters";
+import RequestForm from "../components/common/RequestForm";
 
 const ReceivePage = () => {
-  const { currentUser, isGuest } = useAuth()
-  const [donations, setDonations] = useState([])
-  const [filteredDonations, setFilteredDonations] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('browse') // 'browse' or 'request'
+  const { currentUser, isGuest } = useAuth();
+  const [donations, setDonations] = useState([]);
+  const [filteredDonations, setFilteredDonations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("browse"); // 'browse' or 'request'
   const [filters, setFilters] = useState({
-    search: '',
-    status: 'available',
-    maxDistance: 25
-  })
+    search: "",
+    status: "available",
+    maxDistance: 25,
+  });
 
   useEffect(() => {
     const q = query(
-      collection(db, 'donations'),
-      where('status', '==', 'available'),
-      orderBy('createdAt', 'desc')
-    )
+      collection(db, "donations"),
+      where("status", "==", "available"),
+      orderBy("createdAt", "desc")
+    );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const donationsData = []
+      const donationsData = [];
       querySnapshot.forEach((doc) => {
         donationsData.push({
           id: doc.id,
-          ...doc.data()
-        })
-      })
-      setDonations(donationsData)
-      setFilteredDonations(donationsData)
-      setLoading(false)
-    })
+          ...doc.data(),
+        });
+      });
+      setDonations(donationsData);
+      setFilteredDonations(donationsData);
+      setLoading(false);
+    });
 
-    return () => unsubscribe()
-  }, [])
+    return () => unsubscribe();
+  }, []);
 
   const handleFilterChange = (newFilters) => {
-    setFilters(newFilters)
-    
-    let filtered = donations
+    setFilters(newFilters);
+
+    let filtered = donations;
 
     if (newFilters.search) {
-      const searchTerm = newFilters.search.toLowerCase()
-      filtered = filtered.filter(donation => 
-        donation.foodItem.toLowerCase().includes(searchTerm) ||
-        donation.description?.toLowerCase().includes(searchTerm) ||
-        donation.location.toLowerCase().includes(searchTerm)
-      )
+      const searchTerm = newFilters.search.toLowerCase();
+      filtered = filtered.filter(
+        (donation) =>
+          donation.foodItem.toLowerCase().includes(searchTerm) ||
+          donation.description?.toLowerCase().includes(searchTerm) ||
+          donation.location.toLowerCase().includes(searchTerm)
+      );
     }
 
-    if (newFilters.status !== 'all') {
-      filtered = filtered.filter(donation => donation.status === newFilters.status)
+    if (newFilters.status !== "all") {
+      filtered = filtered.filter(
+        (donation) => donation.status === newFilters.status
+      );
     }
 
-    setFilteredDonations(filtered)
-  }
+    setFilteredDonations(filtered);
+  };
 
   if (loading) {
     return (
@@ -70,7 +80,7 @@ const ReceivePage = () => {
           <p className="mt-4 text-gray-600">Loading available donations...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -90,21 +100,21 @@ const ReceivePage = () => {
         <div className="flex justify-center mb-8">
           <div className="inline-flex rounded-lg border border-gray-200 bg-white">
             <button
-              onClick={() => setActiveTab('browse')}
+              onClick={() => setActiveTab("browse")}
               className={`px-6 py-3 text-sm font-medium rounded-l-lg ${
-                activeTab === 'browse'
-                  ? 'bg-success-600 text-white'
-                  : 'text-gray-500 hover:text-gray-700'
+                activeTab === "browse"
+                  ? "bg-success-600 text-white"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
               🍽️ Browse Available Food
             </button>
             <button
-              onClick={() => setActiveTab('request')}
+              onClick={() => setActiveTab("request")}
               className={`px-6 py-3 text-sm font-medium rounded-r-lg ${
-                activeTab === 'request'
-                  ? 'bg-success-600 text-white'
-                  : 'text-gray-500 hover:text-gray-700'
+                activeTab === "request"
+                  ? "bg-success-600 text-white"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
               📝 Submit Request
@@ -112,7 +122,7 @@ const ReceivePage = () => {
           </div>
         </div>
 
-        {activeTab === 'browse' ? (
+        {activeTab === "browse" ? (
           <>
             {/* Search and Filters */}
             <SearchFilters
@@ -126,10 +136,7 @@ const ReceivePage = () => {
               <>
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
                   {filteredDonations.map((donation) => (
-                    <DonationCard
-                      key={donation.id}
-                      donation={donation}
-                    />
+                    <DonationCard key={donation.id} donation={donation} />
                   ))}
                 </div>
 
@@ -142,10 +149,17 @@ const ReceivePage = () => {
                         How to Request Food
                       </h3>
                       <ul className="text-success-700 space-y-1 text-sm">
-                        <li>• Click "Request This Food" on any available donation</li>
-                        <li>• Contact the donor using the provided contact information</li>
+                        <li>
+                          • Click "Request This Food" on any available donation
+                        </li>
+                        <li>
+                          • Contact the donor using the provided contact
+                          information
+                        </li>
                         <li>• Arrange a pickup time and location</li>
-                        <li>• Be respectful and grateful to our generous donors</li>
+                        <li>
+                          • Be respectful and grateful to our generous donors
+                        </li>
                       </ul>
                     </div>
                   </div>
@@ -158,20 +172,19 @@ const ReceivePage = () => {
                   No available donations found
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  {filters.search 
+                  {filters.search
                     ? `No donations match "${filters.search}". Try adjusting your search.`
-                    : 'No donations are currently available. Try submitting a request instead!'
-                  }
+                    : "No donations are currently available. Try submitting a request instead!"}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <button
-                    onClick={() => setActiveTab('request')}
+                    onClick={() => setActiveTab("request")}
                     className="btn-success px-6 py-3"
                   >
                     📝 Submit a Request
                   </button>
                   <button
-                    onClick={() => setFilters({...filters, search: ''})}
+                    onClick={() => setFilters({ ...filters, search: "" })}
                     className="btn-secondary px-6 py-3"
                   >
                     Clear Search
@@ -214,7 +227,7 @@ const ReceivePage = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ReceivePage
+export default ReceivePage;

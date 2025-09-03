@@ -1,24 +1,27 @@
-import { useState, useEffect } from 'react'
+import React from "react";
+import { useState, useEffect } from "react";
 
 const LocationPicker = ({ onLocationSelect, initialLocation }) => {
-  const [address, setAddress] = useState(initialLocation || '')
-  const [selectedPosition, setSelectedPosition] = useState(null)
-  const [mapLoaded, setMapLoaded] = useState(false)
+  const [address, setAddress] = useState(initialLocation || "");
+  const [selectedPosition, setSelectedPosition] = useState(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
     // Load Google Maps script
-    if (!window.google && !document.getElementById('google-maps-script')) {
-      const script = document.createElement('script')
-      script.id = 'google-maps-script'
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'your-google-maps-api-key'}&libraries=places`
-      script.async = true
-      script.defer = true
-      script.onload = () => setMapLoaded(true)
-      document.head.appendChild(script)
+    if (!window.google && !document.getElementById("google-maps-script")) {
+      const script = document.createElement("script");
+      script.id = "google-maps-script";
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${
+        import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "your-google-maps-api-key"
+      }&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => setMapLoaded(true);
+      document.head.appendChild(script);
     } else if (window.google) {
-      setMapLoaded(true)
+      setMapLoaded(true);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     if (mapLoaded && navigator.geolocation) {
@@ -26,30 +29,30 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
         (position) => {
           const userLocation = {
             lat: position.coords.latitude,
-            lng: position.coords.longitude
-          }
-          setSelectedPosition(userLocation)
+            lng: position.coords.longitude,
+          };
+          setSelectedPosition(userLocation);
         },
         (error) => {
-          console.log('Geolocation error:', error)
+          console.log("Geolocation error:", error);
         }
-      )
+      );
     }
-  }, [mapLoaded])
+  }, [mapLoaded]);
 
   const handleAddressSubmit = (e) => {
-    e.preventDefault()
-    if (!address.trim()) return
+    e.preventDefault();
+    if (!address.trim()) return;
 
     // Simple geocoding simulation - in production, use Google Geocoding API
     const mockCoordinates = {
       lat: 37.7749 + (Math.random() - 0.5) * 0.1,
-      lng: -122.4194 + (Math.random() - 0.5) * 0.1
-    }
-    
-    setSelectedPosition(mockCoordinates)
-    onLocationSelect(address, mockCoordinates)
-  }
+      lng: -122.4194 + (Math.random() - 0.5) * 0.1,
+    };
+
+    setSelectedPosition(mockCoordinates);
+    onLocationSelect(address, mockCoordinates);
+  };
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
@@ -57,20 +60,22 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
         (position) => {
           const userLocation = {
             lat: position.coords.latitude,
-            lng: position.coords.longitude
-          }
-          setSelectedPosition(userLocation)
-          setAddress('Current Location')
-          onLocationSelect('Current Location', userLocation)
+            lng: position.coords.longitude,
+          };
+          setSelectedPosition(userLocation);
+          setAddress("Current Location");
+          onLocationSelect("Current Location", userLocation);
         },
         (error) => {
-          alert('Unable to get your location. Please enter an address manually.')
+          alert(
+            "Unable to get your location. Please enter an address manually."
+          );
         }
-      )
+      );
     } else {
-      alert('Geolocation is not supported by this browser.')
+      alert("Geolocation is not supported by this browser.");
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
@@ -119,7 +124,8 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
             ✅ <strong>Location Selected:</strong> {address}
           </p>
           <p className="text-xs text-green-600">
-            Coordinates: {selectedPosition.lat.toFixed(4)}, {selectedPosition.lng.toFixed(4)}
+            Coordinates: {selectedPosition.lat.toFixed(4)},{" "}
+            {selectedPosition.lng.toFixed(4)}
           </p>
         </div>
       )}
@@ -136,7 +142,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
         </ul>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default LocationPicker
+export default LocationPicker;

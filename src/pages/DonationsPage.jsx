@@ -1,69 +1,79 @@
-import { useState, useEffect } from 'react'
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
-import { db } from '../config/firebase'
-import DonationCard from '../components/common/DonationCard'
-import DonationMap from '../components/common/DonationMap'
-import SearchFilters from '../components/common/SearchFilters'
+import React from "react";
+import { useState, useEffect } from "react";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+} from "firebase/firestore";
+import { db } from "../config/firebase";
+import DonationCard from "../components/common/DonationCard";
+import DonationMap from "../components/common/DonationMap";
+import SearchFilters from "../components/common/SearchFilters";
 
 const DonationsPage = () => {
-  const [donations, setDonations] = useState([])
-  const [filteredDonations, setFilteredDonations] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [viewMode, setViewMode] = useState('list') // 'list' or 'map'
+  const [donations, setDonations] = useState([]);
+  const [filteredDonations, setFilteredDonations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState("list"); // 'list' or 'map'
   const [filters, setFilters] = useState({
-    search: '',
-    status: 'available',
-    maxDistance: 50 // km
-  })
+    search: "",
+    status: "available",
+    maxDistance: 50, // km
+  });
 
   useEffect(() => {
     const q = query(
-      collection(db, 'donations'),
-      where('status', '==', 'available'),
-      orderBy('createdAt', 'desc')
-    )
+      collection(db, "donations"),
+      where("status", "==", "available"),
+      orderBy("createdAt", "desc")
+    );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const donationsData = []
+      const donationsData = [];
       querySnapshot.forEach((doc) => {
         donationsData.push({
           id: doc.id,
-          ...doc.data()
-        })
-      })
-      setDonations(donationsData)
-      setFilteredDonations(donationsData)
-      setLoading(false)
-    })
+          ...doc.data(),
+        });
+      });
+      setDonations(donationsData);
+      setFilteredDonations(donationsData);
+      setLoading(false);
+    });
 
-    return () => unsubscribe()
-  }, [])
+    return () => unsubscribe();
+  }, []);
 
   const handleFilterChange = (newFilters) => {
-    setFilters(newFilters)
-    
-    let filtered = donations
+    setFilters(newFilters);
+
+    let filtered = donations;
 
     // Search filter
     if (newFilters.search) {
-      const searchTerm = newFilters.search.toLowerCase()
-      filtered = filtered.filter(donation => 
-        donation.foodItem.toLowerCase().includes(searchTerm) ||
-        donation.description?.toLowerCase().includes(searchTerm) ||
-        donation.location.toLowerCase().includes(searchTerm)
-      )
+      const searchTerm = newFilters.search.toLowerCase();
+      filtered = filtered.filter(
+        (donation) =>
+          donation.foodItem.toLowerCase().includes(searchTerm) ||
+          donation.description?.toLowerCase().includes(searchTerm) ||
+          donation.location.toLowerCase().includes(searchTerm)
+      );
     }
 
     // Status filter
-    if (newFilters.status !== 'all') {
-      filtered = filtered.filter(donation => donation.status === newFilters.status)
+    if (newFilters.status !== "all") {
+      filtered = filtered.filter(
+        (donation) => donation.status === newFilters.status
+      );
     }
 
     // Distance filter would require user location and calculation
     // For now, we'll skip the distance filter implementation
 
-    setFilteredDonations(filtered)
-  }
+    setFilteredDonations(filtered);
+  };
 
   if (loading) {
     return (
@@ -73,7 +83,7 @@ const DonationsPage = () => {
           <p className="mt-4 text-gray-600">Loading donations...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -93,21 +103,21 @@ const DonationsPage = () => {
         <div className="flex justify-center mb-6">
           <div className="inline-flex rounded-lg border border-gray-200 bg-white">
             <button
-              onClick={() => setViewMode('list')}
+              onClick={() => setViewMode("list")}
               className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
-                viewMode === 'list'
-                  ? 'bg-primary-600 text-white'
-                  : 'text-gray-500 hover:text-gray-700'
+                viewMode === "list"
+                  ? "bg-primary-600 text-white"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
               📋 List View
             </button>
             <button
-              onClick={() => setViewMode('map')}
+              onClick={() => setViewMode("map")}
               className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
-                viewMode === 'map'
-                  ? 'bg-primary-600 text-white'
-                  : 'text-gray-500 hover:text-gray-700'
+                viewMode === "map"
+                  ? "bg-primary-600 text-white"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
               🗺️ Map View
@@ -123,15 +133,12 @@ const DonationsPage = () => {
         />
 
         {/* Content */}
-        {viewMode === 'list' ? (
+        {viewMode === "list" ? (
           <div className="space-y-6">
             {filteredDonations.length > 0 ? (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredDonations.map((donation) => (
-                  <DonationCard
-                    key={donation.id}
-                    donation={donation}
-                  />
+                  <DonationCard key={donation.id} donation={donation} />
                 ))}
               </div>
             ) : (
@@ -141,13 +148,14 @@ const DonationsPage = () => {
                   No donations found
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  {filters.search 
+                  {filters.search
                     ? `No donations match "${filters.search}". Try adjusting your search.`
-                    : 'No donations are currently available. Check back later!'
-                  }
+                    : "No donations are currently available. Check back later!"}
                 </p>
                 <button
-                  onClick={() => setFilters({...filters, search: '', status: 'available'})}
+                  onClick={() =>
+                    setFilters({ ...filters, search: "", status: "available" })
+                  }
                   className="btn-secondary"
                 >
                   Clear Filters
@@ -176,19 +184,19 @@ const DonationsPage = () => {
               </div>
               <div>
                 <div className="text-2xl font-bold text-success-600">
-                  {donations.filter(d => d.status === 'available').length}
+                  {donations.filter((d) => d.status === "available").length}
                 </div>
                 <div className="text-sm text-gray-600">Available Now</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-orange-600">
-                  {donations.filter(d => d.status === 'claimed').length}
+                  {donations.filter((d) => d.status === "claimed").length}
                 </div>
                 <div className="text-sm text-gray-600">Claimed</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-gray-600">
-                  {donations.filter(d => d.status === 'completed').length}
+                  {donations.filter((d) => d.status === "completed").length}
                 </div>
                 <div className="text-sm text-gray-600">Completed</div>
               </div>
@@ -197,7 +205,7 @@ const DonationsPage = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default DonationsPage
+export default DonationsPage;
