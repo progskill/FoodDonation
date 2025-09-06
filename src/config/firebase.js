@@ -4,13 +4,13 @@ import { getFirestore } from 'firebase/firestore'
 import { getMessaging, isSupported } from 'firebase/messaging'
 
 const firebaseConfig = {
-  // Replace with your Firebase config
-  apiKey: "your-api-key",
-  authDomain: "your-project-id.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "your-sender-id",
-  appId: "your-app-id"
+  apiKey: "AIzaSyBwEhu3VaKBIMZ5hzkMOwkFhPWJAZyWEF8",
+  authDomain: "community-food-bank-1a252.firebaseapp.com",
+  projectId: "community-food-bank-1a252",
+  storageBucket: "community-food-bank-1a252.firebasestorage.app",
+  messagingSenderId: "824500465447",
+  appId: "1:824500465447:web:aeda00e3430aca15764302",
+  measurementId: "G-9ZFM6ELNWR"
 }
 
 const app = initializeApp(firebaseConfig)
