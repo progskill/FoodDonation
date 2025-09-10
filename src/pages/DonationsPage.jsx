@@ -15,13 +15,35 @@ import {
 import { db } from "../config/firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotification } from "../contexts/NotificationContext";
+import { useHousehold } from "../hooks/useHousehold";
 import DonationCard from "../components/common/DonationCard";
 import DonationMap from "../components/common/DonationMap";
 import SearchFilters from "../components/common/SearchFilters";
+import HouseholdRegistration from "../components/common/HouseholdRegistration";
+
+// Helper function to check if donation is urgent (expires within 5 days)
+const checkIfUrgent = (expirationDate) => {
+  if (!expirationDate) return false;
+  
+  const expDate = expirationDate.toDate ? expirationDate.toDate() : new Date(expirationDate);
+  const now = new Date();
+  const fiveDaysFromNow = new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000));
+  
+  return expDate <= fiveDaysFromNow;
+};
 
 const DonationsPage = () => {
   const { currentUser, isGuest } = useAuth();
   const { showSuccess, showError } = useNotification();
+  const { 
+    household, 
+    loading: householdLoading, 
+    hasHousehold, 
+    canApplyForDonations,
+    getMaxDonationPercentage,
+    getHouseholdSize,
+    isLargeHousehold 
+  } = useHousehold();
   const [donations, setDonations] = useState([]);
   const [filteredDonations, setFilteredDonations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +59,7 @@ const DonationsPage = () => {
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [applicationQuantity, setApplicationQuantity] = useState(1);
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showHouseholdModal, setShowHouseholdModal] = useState(false);
   const [customRequest, setCustomRequest] = useState({
     foodItem: "",
     quantity: "",
@@ -76,13 +99,29 @@ const DonationsPage = () => {
           status = "partially_claimed";
         }
         
+        // Calculate if donation is urgent based on expiration
+        const isUrgent = checkIfUrgent(data.expirationDate);
+        
         donationsData.push({
           id: doc.id,
           ...data,
           remainingQuantity,
           originalQuantity,
           status,
+          isUrgent,
         });
+      });
+      
+      // Sort donations: urgent ones first, then by creation date
+      donationsData.sort((a, b) => {
+        // Urgent donations first
+        if (a.isUrgent && !b.isUrgent) return -1;
+        if (!a.isUrgent && b.isUrgent) return 1;
+        
+        // Then by creation date (newest first)
+        const aDate = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+        const bDate = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+        return bDate - aDate;
       });
       
       console.log("Fetched donations:", donationsData.length, donationsData);
@@ -96,17 +135,17 @@ const DonationsPage = () => {
 
   // Load user applications and daily pickup count
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && household) {
       // Get user's applications from today
       const today = new Date().toISOString().split('T')[0];
       
-      // Get all user applications first, then filter by date in memory
-      const userApplicationsQuery = query(
+      // Get all household applications first, then filter by date in memory
+      const householdApplicationsQuery = query(
         collection(db, "applications"),
-        where("applicantId", "==", currentUser.uid)
+        where("householdId", "==", household.id)
       );
       
-      const unsubscribeApps = onSnapshot(userApplicationsQuery, (snapshot) => {
+      const unsubscribeApps = onSnapshot(householdApplicationsQuery, (snapshot) => {
         const apps = [];
         let totalPickup = 0;
         
@@ -127,11 +166,11 @@ const DonationsPage = () => {
       
       return () => unsubscribeApps();
     } else {
-      // For guests, reset the applications
+      // For users without household or guests, reset the applications
       setUserApplications([]);
       setDailyPickupCount(0);
     }
-  }, [currentUser]);
+  }, [currentUser, household]);
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
@@ -174,6 +213,19 @@ const DonationsPage = () => {
       return;
     }
     
+    // Check if user has registered a household
+    if (!hasHousehold) {
+      showError('Please register your household before applying for donations');
+      setShowHouseholdModal(true);
+      return;
+    }
+    
+    // Check if user can apply for donations (is registrant or authorized member)
+    if (!canApplyForDonations()) {
+      showError('You are not authorized to apply for donations on behalf of your household');
+      return;
+    }
+    
     setSelectedDonation(donation);
     setApplicationQuantity(1);
     setShowApplicationModal(true);
@@ -198,27 +250,51 @@ const DonationsPage = () => {
         return;
       }
       
-      // Check if user already applied for this donation
+      // Check if household already applied for this donation
       const existingApplication = userApplications.find(
         app => app.donationId === selectedDonation.id
       );
       
       if (existingApplication) {
-        showError('You already applied for this donation.');
+        showError('Your household has already applied for this donation.');
         return;
       }
       
       const remainingQty = parseInt(selectedDonation.remainingQuantity) || parseInt(selectedDonation.quantity) || 0;
+      const originalQty = parseInt(selectedDonation.originalQuantity) || parseInt(selectedDonation.quantity) || 0;
+      
+      // Calculate max allowed per household for this donation (30%/35% rule with small amount exception)
+      const householdPercentage = getMaxDonationPercentage(); // 30% or 35% based on household size
+      let maxAllowedForThisDonation;
+      if (remainingQty <= 3) {
+        // Small amount exception: allow up to remaining quantity
+        maxAllowedForThisDonation = remainingQty;
+      } else {
+        // Apply percentage rule based on original quantity and household size
+        maxAllowedForThisDonation = Math.max(1, Math.ceil(originalQty * householdPercentage));
+      }
+      
       if (applicationQuantity > remainingQty) {
         showError('Not enough quantity available.');
         return;
       }
       
-      // Create application with simpler structure
+      if (applicationQuantity > maxAllowedForThisDonation) {
+        const percentageNote = remainingQty <= 3 ? '' : ` (${Math.round(householdPercentage * 100)}% of original ${originalQty} for ${isLargeHousehold() ? 'large' : 'regular'} household)`;
+        showError(`Maximum ${maxAllowedForThisDonation} serving(s) allowed per household for this donation${percentageNote}.`);
+        return;
+      }
+      
+      // Create application with household structure
       const applicationData = {
         donationId: selectedDonation.id,
         applicantId: userId,
         applicantName: currentUser?.email || currentUser?.displayName || 'Anonymous',
+        householdId: household.id,
+        householdName: household.householdName,
+        householdSize: getHouseholdSize(),
+        isLargeHousehold: isLargeHousehold(),
+        maxPercentage: Math.round(householdPercentage * 100),
         quantity: parseInt(applicationQuantity),
         applicationDate: today,
         status: 'approved', // Auto-approve for now, can be changed to 'pending' for manual approval
@@ -243,8 +319,11 @@ const DonationsPage = () => {
         applicants: arrayUnion({
           applicantId: userId,
           applicantName: applicationData.applicantName,
+          householdId: household.id,
+          householdName: household.householdName,
+          householdSize: getHouseholdSize(),
           quantity: parseInt(applicationQuantity),
-          appliedAt: serverTimestamp(),
+          appliedAt: new Date().toISOString(),
           status: 'approved'
         }),
         remainingQuantity: newRemainingQuantity,
@@ -389,16 +468,32 @@ const DonationsPage = () => {
           
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            {!hasHousehold && currentUser && (
+              <button
+                onClick={() => setShowHouseholdModal(true)}
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-green-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+              >
+                👥 Register Household
+              </button>
+            )}
             <button
               onClick={() => setShowRequestModal(true)}
               className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
             >
               🙋‍♀️ Request Specific Food
             </button>
+            {hasHousehold && (
+              <button
+                onClick={() => setShowHouseholdModal(true)}
+                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+              >
+                ✏️ Edit Household
+              </button>
+            )}
           </div>
           
           {/* Daily Limit Info */}
-          {currentUser && (
+          {currentUser && hasHousehold && (
             <div className="inline-flex items-center bg-white/70 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg border border-white/20 mb-6">
               <span className="text-2xl mr-3">📊</span>
               <div className="text-left">
@@ -406,7 +501,10 @@ const DonationsPage = () => {
                   Daily Pickup: {dailyPickupCount}/
                   {Math.floor(donations.reduce((total, d) => total + (d.originalQuantity || d.quantity || 0), 0) * 0.3)} servings
                 </div>
-                <div className="text-xs text-gray-600">Resets every day at midnight</div>
+                <div className="text-xs text-gray-600">
+                  Household: {household?.householdName} ({getHouseholdSize()} members)
+                  {isLargeHousehold() && <span className="text-green-600 font-medium"> • 35% Max Limit</span>}
+                </div>
               </div>
             </div>
           )}
@@ -458,6 +556,7 @@ const DonationsPage = () => {
                     userApplications={userApplications}
                     getStatusColor={getStatusColor}
                     getStatusText={getStatusText}
+                    household={household}
                   />
                 ))}
               </div>
@@ -583,6 +682,19 @@ const DonationsPage = () => {
             onClose={() => setShowApplicationModal(false)}
             maxDailyPickup={Math.floor(donations.reduce((total, d) => total + (d.originalQuantity || d.quantity || 0), 0) * 0.3)}
             currentDailyCount={dailyPickupCount}
+            household={household}
+          />
+        )}
+        
+        {/* Household Registration Modal */}
+        {showHouseholdModal && (
+          <HouseholdRegistration
+            onComplete={(householdData) => {
+              setShowHouseholdModal(false);
+              showSuccess('Household registered successfully! You can now apply for donations.');
+            }}
+            onClose={() => setShowHouseholdModal(false)}
+            existingHousehold={household}
           />
         )}
         
@@ -601,10 +713,10 @@ const DonationsPage = () => {
 };
 
 // Enhanced Donation Card Component
-const EnhancedDonationCard = ({ donation, onApply, userApplications, getStatusColor, getStatusText }) => {
+const EnhancedDonationCard = ({ donation, onApply, userApplications, getStatusColor, getStatusText, household }) => {
   const [showDetails, setShowDetails] = useState(false);
   
-  const userApplied = userApplications.some(app => app.donationId === donation.id);
+  const householdApplied = userApplications.some(app => app.donationId === donation.id);
   const canApply = donation.status === "available" || donation.status === "partially_claimed";
   
   const formatDate = (timestamp) => {
@@ -628,7 +740,14 @@ const EnhancedDonationCard = ({ donation, onApply, userApplications, getStatusCo
   };
   
   return (
-    <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+    <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 relative">
+      {/* Urgent Banner */}
+      {donation.isUrgent && (
+        <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2 text-sm font-bold text-center animate-pulse">
+          ⚠️ URGENT: Pick up soon - expires within 5 days!
+        </div>
+      )}
+      
       {/* Header */}
       <div className="p-6 pb-4">
         <div className="flex justify-between items-start mb-4">
@@ -694,7 +813,7 @@ const EnhancedDonationCard = ({ donation, onApply, userApplications, getStatusCo
       
       {/* Actions */}
       <div className="p-6 pt-4 flex flex-col sm:flex-row gap-3">
-        {canApply && !userApplied ? (
+        {canApply && !householdApplied ? (
           <>
             <button
               onClick={onApply}
@@ -709,9 +828,9 @@ const EnhancedDonationCard = ({ donation, onApply, userApplications, getStatusCo
               📞 Contact
             </button>
           </>
-        ) : userApplied ? (
+        ) : householdApplied ? (
           <div className="flex-1 text-center py-3 bg-blue-50 text-blue-700 font-semibold rounded-xl">
-            ✅ Application Submitted
+            ✅ Household Applied
           </div>
         ) : (
           <div className="flex-1 text-center py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl">
@@ -770,7 +889,7 @@ const EnhancedDonationCard = ({ donation, onApply, userApplications, getStatusCo
 };
 
 // Application Modal Component
-const ApplicationModal = ({ donation, applicationQuantity, setApplicationQuantity, onSubmit, onClose, maxDailyPickup, currentDailyCount }) => {
+const ApplicationModal = ({ donation, applicationQuantity, setApplicationQuantity, onSubmit, onClose, maxDailyPickup, currentDailyCount, household }) => {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-fade-in">
@@ -808,15 +927,50 @@ const ApplicationModal = ({ donation, applicationQuantity, setApplicationQuantit
                 {applicationQuantity}
               </div>
               <button
-                onClick={() => setApplicationQuantity(Math.min(donation.remainingQuantity, maxDailyPickup - currentDailyCount, applicationQuantity + 1))}
+                onClick={() => {
+                  const originalQty = parseInt(donation.originalQuantity) || parseInt(donation.quantity) || 0;
+                  const remainingQty = donation.remainingQuantity;
+                  const householdSize = household?.memberCount || household?.members?.length || 0;
+                  const householdPercentage = householdSize >= 7 ? 0.35 : 0.30;
+                  
+                  // Calculate max allowed for this donation
+                  let maxForDonation;
+                  if (remainingQty <= 3) {
+                    maxForDonation = remainingQty;
+                  } else {
+                    maxForDonation = Math.max(1, Math.ceil(originalQty * householdPercentage));
+                  }
+                  
+                  setApplicationQuantity(Math.min(
+                    remainingQty,
+                    maxForDonation,
+                    maxDailyPickup - currentDailyCount,
+                    applicationQuantity + 1
+                  ));
+                }}
                 className="w-10 h-10 rounded-full bg-gray-200 text-gray-700 font-bold hover:bg-gray-300 transition-all"
               >
                 +
               </button>
             </div>
-            <p className="text-xs text-gray-600 mt-2">
-              Daily limit: {currentDailyCount + applicationQuantity}/{maxDailyPickup} servings
-            </p>
+            <div className="text-xs text-gray-600 mt-2 space-y-1">
+              <p>Daily limit: {currentDailyCount + applicationQuantity}/{maxDailyPickup} servings</p>
+              <p className="text-orange-600 font-medium">
+                Max per donation: {(() => {
+                  const originalQty = parseInt(donation.originalQuantity) || parseInt(donation.quantity) || 0;
+                  const remainingQty = donation.remainingQuantity;
+                  const householdSize = household?.memberCount || household?.members?.length || 0;
+                  const householdPercentage = householdSize >= 7 ? 0.35 : 0.30;
+                  const percentageText = householdSize >= 7 ? '35%' : '30%';
+                  
+                  if (remainingQty <= 3) {
+                    return `${remainingQty} (small amount exception)`;
+                  } else {
+                    return `${Math.max(1, Math.ceil(originalQty * householdPercentage))} (${percentageText} of ${originalQty} - ${householdSize >= 7 ? 'Large' : 'Regular'} household)`;
+                  }
+                })()}
+              </p>
+            </div>
           </div>
           
           {/* Guidelines */}
@@ -839,7 +993,21 @@ const ApplicationModal = ({ donation, applicationQuantity, setApplicationQuantit
             </button>
             <button
               onClick={onSubmit}
-              disabled={applicationQuantity > donation.remainingQuantity || currentDailyCount + applicationQuantity > maxDailyPickup}
+              disabled={(() => {
+                const originalQty = parseInt(donation.originalQuantity) || parseInt(donation.quantity) || 0;
+                const remainingQty = donation.remainingQuantity;
+                const householdSize = household?.memberCount || household?.members?.length || 0;
+                const householdPercentage = householdSize >= 7 ? 0.35 : 0.30;
+                let maxForDonation;
+                if (remainingQty <= 3) {
+                  maxForDonation = remainingQty;
+                } else {
+                  maxForDonation = Math.max(1, Math.ceil(originalQty * householdPercentage));
+                }
+                return applicationQuantity > remainingQty || 
+                       applicationQuantity > maxForDonation ||
+                       currentDailyCount + applicationQuantity > maxDailyPickup;
+              })()}
               className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               Submit Application

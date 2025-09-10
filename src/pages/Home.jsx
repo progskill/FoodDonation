@@ -1,12 +1,23 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import Footer from "../components/layout/Footer";
 
 const Home = () => {
   const { currentUser, isGuest } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-green-50 to-orange-50 relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-10 left-10 w-32 h-32 bg-green-400 rounded-full blur-xl"></div>
+        <div className="absolute top-1/3 right-20 w-48 h-48 bg-blue-400 rounded-full blur-2xl"></div>
+        <div className="absolute bottom-20 left-1/4 w-40 h-40 bg-orange-400 rounded-full blur-xl"></div>
+        <div className="absolute bottom-10 right-10 w-28 h-28 bg-purple-400 rounded-full blur-lg"></div>
+      </div>
+      
+      {/* Content */}
+      <div className="relative z-10">
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
@@ -21,19 +32,19 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/donate"
-              className="btn-primary px-8 py-4 text-lg font-medium"
+              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 inline-block"
             >
               🍎 Donate Food
             </Link>
             <Link
               to="/receive"
-              className="btn-success px-8 py-4 text-lg font-medium"
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 inline-block"
             >
               🤝 Request Food
             </Link>
             <Link
               to="/donations"
-              className="btn-secondary px-8 py-4 text-lg font-medium"
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 inline-block"
             >
               📋 View Available
             </Link>
@@ -124,7 +135,7 @@ const Home = () => {
                 Sign up for a free account to save your preferences and get
                 personalized notifications.
               </p>
-              <button className="btn-primary px-8 py-4 text-lg">
+              <button className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
                 Create Free Account
               </button>
               <p className="text-sm text-gray-500">
@@ -137,10 +148,10 @@ const Home = () => {
                 Welcome back! Ready to make a difference today?
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/donate" className="btn-primary px-6 py-3">
+                <Link to="/donate" className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 inline-block">
                   Share Food Now
                 </Link>
-                <Link to="/donations" className="btn-secondary px-6 py-3">
+                <Link to="/donations" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 inline-block">
                   Browse Donations
                 </Link>
               </div>
@@ -148,6 +159,8 @@ const Home = () => {
           )}
         </div>
       </section>
+      </div>
+      <Footer />
     </div>
   );
 };
