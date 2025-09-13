@@ -37,7 +37,6 @@ const DonationsPage = () => {
   const { showSuccess, showError } = useNotification();
   const { 
     household, 
-    loading: householdLoading, 
     hasHousehold, 
     canApplyForDonations,
     getMaxDonationPercentage,
@@ -213,6 +212,12 @@ const DonationsPage = () => {
       return;
     }
     
+    // SECURITY: Prevent users from applying to their own donations
+    if (currentUser && donation.donorId === currentUser.uid) {
+      showError('You cannot apply for your own donations. You are the donor of this item.');
+      return;
+    }
+    
     // Check if user has registered a household
     if (!hasHousehold) {
       showError('Please register your household before applying for donations');
@@ -237,9 +242,17 @@ const DonationsPage = () => {
       return;
     }
 
+    // SECURITY FAILSAFE: Double-check that user is not applying to their own donation
+    if (currentUser && selectedDonation.donorId === currentUser.uid) {
+      showError('Security error: You cannot apply for your own donations.');
+      setShowApplicationModal(false);
+      return;
+    }
+
+    const userId = currentUser?.uid || `guest_${Date.now()}`;
+    const today = new Date().toISOString().split('T')[0]; // Use ISO format for consistency
+
     try {
-      const userId = currentUser?.uid || `guest_${Date.now()}`;
-      const today = new Date().toISOString().split('T')[0]; // Use ISO format for consistency
       
       // Check daily limit (max 30% of total available food per day)
       const totalAvailable = donations.reduce((total, d) => total + (parseInt(d.originalQuantity) || parseInt(d.quantity) || 0), 0);
@@ -556,7 +569,6 @@ const DonationsPage = () => {
                     userApplications={userApplications}
                     getStatusColor={getStatusColor}
                     getStatusText={getStatusText}
-                    household={household}
                   />
                 ))}
               </div>
@@ -689,7 +701,7 @@ const DonationsPage = () => {
         {/* Household Registration Modal */}
         {showHouseholdModal && (
           <HouseholdRegistration
-            onComplete={(householdData) => {
+            onComplete={() => {
               setShowHouseholdModal(false);
               showSuccess('Household registered successfully! You can now apply for donations.');
             }}
@@ -713,11 +725,13 @@ const DonationsPage = () => {
 };
 
 // Enhanced Donation Card Component
-const EnhancedDonationCard = ({ donation, onApply, userApplications, getStatusColor, getStatusText, household }) => {
+const EnhancedDonationCard = ({ donation, onApply, userApplications, getStatusColor, getStatusText }) => {
+  const { currentUser } = useAuth();
   const [showDetails, setShowDetails] = useState(false);
   
   const householdApplied = userApplications.some(app => app.donationId === donation.id);
-  const canApply = donation.status === "available" || donation.status === "partially_claimed";
+  const isOwnDonation = currentUser && donation.donorId === currentUser.uid;
+  const canApply = (donation.status === "available" || donation.status === "partially_claimed") && !isOwnDonation;
   
   const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A';
@@ -813,7 +827,11 @@ const EnhancedDonationCard = ({ donation, onApply, userApplications, getStatusCo
       
       {/* Actions */}
       <div className="p-6 pt-4 flex flex-col sm:flex-row gap-3">
-        {canApply && !householdApplied ? (
+        {isOwnDonation ? (
+          <div className="flex-1 text-center py-3 bg-gradient-to-r from-green-50 to-blue-50 text-green-700 font-semibold rounded-xl border-2 border-green-200">
+            🎁 Your Donation - Cannot Apply
+          </div>
+        ) : canApply && !householdApplied ? (
           <>
             <button
               onClick={onApply}
