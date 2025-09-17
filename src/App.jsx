@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import DonatePage from "./pages/DonatePage";
 import ReceivePage from "./pages/ReceivePage";
 import DonationsPage from "./pages/DonationsPage";
+import RequestsPage from "./pages/RequestsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
 
@@ -24,6 +25,7 @@ function App() {
                 <Route path="/donate" element={<DonatePage />} />
                 <Route path="/receive" element={<ReceivePage />} />
                 <Route path="/donations" element={<DonationsPage />} />
+                <Route path="/requests" element={<RequestsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/admin" element={<AdminPage />} />
               </Routes>

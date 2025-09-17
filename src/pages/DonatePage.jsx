@@ -1,6 +1,6 @@
 import React from "react";
-import { useState } from "react";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { collection, addDoc, serverTimestamp, query, onSnapshot, orderBy, updateDoc, doc } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotification } from "../contexts/NotificationContext";
@@ -21,10 +21,106 @@ const DonatePage = () => {
     useManualLocation: false,
     pickupPreference: "flexible", // flexible, asap, scheduled
     availableUntil: "",
+    targetRequestId: "", // New field for targeting specific requests
+    targetRequestType: "", // 'regular' or 'custom'
   });
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [showPreview, setShowPreview] = useState(false);
+  const [requests, setRequests] = useState([]);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+
+  // Load requests for the dropdown
+  useEffect(() => {
+    // Load both regular requests and custom food requests
+    const regularRequestsQuery = query(
+      collection(db, "requests")
+    );
+
+    const customRequestsQuery = query(
+      collection(db, "food-requests")
+    );
+
+    const unsubscribeRegular = onSnapshot(regularRequestsQuery, (snapshot) => {
+      const regularRequests = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.status === 'open') { // Only show open requests
+          regularRequests.push({
+            id: doc.id,
+            ...data,
+            type: 'regular'
+          });
+        }
+      });
+
+      const unsubscribeCustom = onSnapshot(customRequestsQuery, (snapshot) => {
+        const customRequests = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.status === 'open') { // Only show open requests
+            customRequests.push({
+              id: doc.id,
+              ...data,
+              type: 'custom'
+            });
+          }
+        });
+
+        // Combine and sort all requests
+        const allRequests = [...regularRequests, ...customRequests];
+
+        // Sort by urgency first, then by creation date
+        allRequests.sort((a, b) => {
+          const urgencyOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+          const aUrgency = urgencyOrder[a.urgency] || 1;
+          const bUrgency = urgencyOrder[b.urgency] || 1;
+
+          if (aUrgency !== bUrgency) {
+            return bUrgency - aUrgency; // Higher urgency first
+          }
+
+          const aDate = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+          const bDate = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+          return bDate - aDate;
+        });
+
+        setRequests(allRequests);
+      });
+
+      return () => unsubscribeCustom();
+    });
+
+    return () => unsubscribeRegular();
+  }, []);
+
+  // Check for pre-filled data from requests page
+  useEffect(() => {
+    const donateToRequestData = sessionStorage.getItem('donateToRequest');
+    if (donateToRequestData) {
+      try {
+        const requestInfo = JSON.parse(donateToRequestData);
+        setFormData(prev => ({
+          ...prev,
+          foodItem: requestInfo.suggestedFoodItem || "",
+          quantity: requestInfo.suggestedQuantity || "",
+          targetRequestId: requestInfo.targetRequestId || "",
+          targetRequestType: requestInfo.targetRequestType || "",
+        }));
+
+        // Find and set the selected request
+        const targetRequest = requests.find(r => r.id === requestInfo.targetRequestId && r.type === requestInfo.targetRequestType);
+        if (targetRequest) {
+          setSelectedRequest(targetRequest);
+        }
+
+        // Clear the session storage
+        sessionStorage.removeItem('donateToRequest');
+      } catch (error) {
+        console.error('Error parsing donate request data:', error);
+      }
+    }
+  }, [requests]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -40,6 +136,33 @@ const DonatePage = () => {
       location,
       coordinates,
     }));
+  };
+
+  const handleRequestSelection = (e) => {
+    const selectedValue = e.target.value;
+    if (selectedValue === "") {
+      setSelectedRequest(null);
+      setFormData(prev => ({
+        ...prev,
+        targetRequestId: "",
+        targetRequestType: "",
+      }));
+      return;
+    }
+
+    const [requestType, requestId] = selectedValue.split('|');
+    const request = requests.find(r => r.id === requestId && r.type === requestType);
+
+    if (request) {
+      setSelectedRequest(request);
+      setFormData(prev => ({
+        ...prev,
+        targetRequestId: requestId,
+        targetRequestType: requestType,
+        foodItem: request.foodItem || request.foodType?.replace('-', ' ') || prev.foodItem,
+        quantity: request.quantity || prev.quantity,
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -65,7 +188,26 @@ const DonatePage = () => {
 
       const docRef = await addDoc(collection(db, "donations"), donationData);
 
-      showSuccess("Your donation has been posted successfully!");
+      // If this donation is targeting a specific request, mark the request as fulfilled
+      if (formData.targetRequestId && formData.targetRequestType) {
+        try {
+          const requestCollection = formData.targetRequestType === 'regular' ? 'requests' : 'food-requests';
+          await updateDoc(doc(db, requestCollection, formData.targetRequestId), {
+            status: 'fulfilled',
+            fulfilledBy: currentUser?.uid || 'guest',
+            fulfilledAt: serverTimestamp(),
+            donationId: docRef.id,
+            donorContact: formData.contactInfo
+          });
+          showSuccess("Your donation has been posted and the request has been marked as fulfilled!");
+        } catch (error) {
+          console.error("Error updating request status:", error);
+          showSuccess("Your donation has been posted successfully!");
+        }
+      } else {
+        showSuccess("Your donation has been posted successfully!");
+      }
+
       notifyNewDonation({ ...donationData, id: docRef.id });
 
       setFormData({
@@ -79,7 +221,10 @@ const DonatePage = () => {
         useManualLocation: false,
         pickupPreference: "flexible",
         availableUntil: "",
+        targetRequestId: "",
+        targetRequestType: "",
       });
+      setSelectedRequest(null);
       setCurrentStep(1);
       setShowPreview(false);
     } catch (error) {
@@ -98,9 +243,20 @@ const DonatePage = () => {
           <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-blue-600 mb-4">
             🍎 Donate Food to Your Community
           </h1>
-          <p className="text-gray-600 text-lg mb-6">
+          <p className="text-gray-600 text-lg mb-4">
             Turn your extra food into hope for someone in need
           </p>
+
+          {/* Browse Requests Link */}
+          <div className="mb-8">
+            <a
+              href="/requests"
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+            >
+              🙋‍♀️ Browse Food Requests
+              <span className="ml-2 text-sm opacity-90">→ See what people need</span>
+            </a>
+          </div>
           
           {/* Progress Steps */}
           <div className="flex justify-center items-center space-x-4 mb-8">
@@ -139,6 +295,71 @@ const DonatePage = () => {
                   <span className="bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm mr-3">1</span>
                   Tell us about your food
                 </h2>
+
+                {/* Request Selection Dropdown */}
+                <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl border-2 border-blue-200">
+                  <label className="block text-sm font-semibold text-blue-800 mb-3">
+                    🎯 Are you donating to fulfill a specific request? (Optional)
+                  </label>
+                  <select
+                    value={selectedRequest ? `${selectedRequest.type}|${selectedRequest.id}` : ""}
+                    onChange={handleRequestSelection}
+                    className="w-full p-4 border-2 border-blue-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white"
+                  >
+                    <option value="">🆓 General donation (not for a specific request)</option>
+                    {requests.length > 0 && (
+                      <optgroup label="🙋‍♀️ Open Food Requests">
+                        {requests.map((request) => (
+                          <option
+                            key={`${request.type}-${request.id}`}
+                            value={`${request.type}|${request.id}`}
+                          >
+                            {request.urgency === 'urgent' ? '🚨' : request.urgency === 'high' ? '⚡' : '📝'} {request.foodItem || request.foodType?.replace('-', ' ')} - {request.quantity} ({request.location || 'No location'})
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+
+                  {selectedRequest && (
+                    <div className="mt-4 p-4 bg-white/70 rounded-lg border border-blue-300">
+                      <h4 className="font-bold text-blue-800 mb-2">📋 Request Details:</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <strong className="text-blue-700">Requested by:</strong>
+                          <p className="text-blue-600">{selectedRequest.requesterName || selectedRequest.applicantName || 'Anonymous'}</p>
+                        </div>
+                        <div>
+                          <strong className="text-blue-700">Urgency:</strong>
+                          <span className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${
+                            selectedRequest.urgency === 'urgent' ? 'bg-red-100 text-red-800' :
+                            selectedRequest.urgency === 'high' ? 'bg-orange-100 text-orange-800' :
+                            selectedRequest.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {selectedRequest.urgency || 'normal'}
+                          </span>
+                        </div>
+                        {selectedRequest.description && (
+                          <div className="md:col-span-2">
+                            <strong className="text-blue-700">Additional details:</strong>
+                            <p className="text-blue-600">{selectedRequest.description}</p>
+                          </div>
+                        )}
+                        {selectedRequest.dietary && (
+                          <div className="md:col-span-2">
+                            <strong className="text-blue-700">Dietary needs:</strong>
+                            <p className="text-blue-600">{selectedRequest.dietary}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-blue-600 mt-3">
+                    💡 <strong>Tip:</strong> Donating to a specific request helps ensure your food goes directly to someone who needs exactly what you're offering!
+                  </p>
+                </div>
                 {/* Food Item */}
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>

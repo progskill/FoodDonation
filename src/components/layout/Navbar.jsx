@@ -77,6 +77,16 @@ const Navbar = () => {
               >
                 Request Food
               </Link>
+              <Link
+                to="/requests"
+                className={`hover:text-primary-600 transition-colors ${
+                  isActivePath("/requests")
+                    ? "text-primary-600 font-medium"
+                    : "text-gray-700"
+                }`}
+              >
+                Browse Requests
+              </Link>
             </div>
 
             {/* User Menu */}
@@ -162,6 +172,13 @@ const Navbar = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Request Food
+                </Link>
+                <Link
+                  to="/requests"
+                  className="px-2 py-1 text-gray-700 hover:text-primary-600"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Browse Requests
                 </Link>
 
                 <div className="pt-2 border-t border-gray-200">

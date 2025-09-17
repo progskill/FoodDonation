@@ -40,8 +40,10 @@ const ProfilePage = () => {
     donations: false,
     requests: false,
     claimed: false,
-    applications: false
+    applications: false,
+    fulfilledRequests: false
   });
+  const [fulfilledRequests, setFulfilledRequests] = useState([]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -51,29 +53,26 @@ const ProfilePage = () => {
 
     console.log('ProfilePage: Starting data fetch for user:', currentUser.uid);
     setLoading(true);
-    setDataLoaded({ donations: false, requests: false, claimed: false, applications: false });
+    setDataLoaded({ donations: false, requests: false, claimed: false, applications: false, fulfilledRequests: false });
 
     const fetchUserData = async () => {
       try {
         // Get user's donations
         const donationsQuery = query(
           collection(db, "donations"),
-          where("donorId", "==", currentUser.uid),
-          orderBy("createdAt", "desc")
+          where("donorId", "==", currentUser.uid)
         );
 
         // Get user's requests
         const requestsQuery = query(
           collection(db, "requests"),
-          where("requesterId", "==", currentUser.uid),
-          orderBy("createdAt", "desc")
+          where("requesterId", "==", currentUser.uid)
         );
 
         // Get claimed donations
         const claimedQuery = query(
           collection(db, "donations"),
-          where("claimedBy", "==", currentUser.uid),
-          orderBy("claimedAt", "desc")
+          where("claimedBy", "==", currentUser.uid)
         );
 
 
@@ -82,6 +81,14 @@ const ProfilePage = () => {
           snapshot.forEach((doc) => {
             donations.push({ id: doc.id, ...doc.data() });
           });
+
+          // Sort by creation date (newest first)
+          donations.sort((a, b) => {
+            const aDate = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+            const bDate = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+            return bDate - aDate;
+          });
+
           console.log('ProfilePage: Loaded donations (as DONOR):', donations.length);
           if (donations.length > 0) {
             console.log('ProfilePage: User IS a DONOR - sample donation:', donations[0]);
@@ -98,6 +105,14 @@ const ProfilePage = () => {
           snapshot.forEach((doc) => {
             requests.push({ id: doc.id, ...doc.data() });
           });
+
+          // Sort by creation date (newest first)
+          requests.sort((a, b) => {
+            const aDate = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+            const bDate = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+            return bDate - aDate;
+          });
+
           console.log('ProfilePage: Loaded requests (as APPLICANT):', requests.length);
           if (requests.length > 0) {
             console.log('ProfilePage: User HAS made requests - sample request:', requests[0]);
@@ -114,6 +129,14 @@ const ProfilePage = () => {
           snapshot.forEach((doc) => {
             claimed.push({ id: doc.id, ...doc.data() });
           });
+
+          // Sort by claimed date (newest first)
+          claimed.sort((a, b) => {
+            const aDate = a.claimedAt?.toDate?.() || new Date(a.claimedAt || 0);
+            const bDate = b.claimedAt?.toDate?.() || new Date(b.claimedAt || 0);
+            return bDate - aDate;
+          });
+
           console.log('ProfilePage: Loaded claimed donations (as APPLICANT):', claimed.length);
           if (claimed.length > 0) {
             console.log('ProfilePage: User HAS claimed donations - sample claim:', claimed[0]);
@@ -162,7 +185,6 @@ const ProfilePage = () => {
                 });
                 console.log('ProfilePage: Loaded donation applications:', allApplications.length);
                 setDonationApplications(allApplications);
-                currentApplications = allApplications;
               }
               setDataLoaded(prev => ({ ...prev, applications: true }));
             } catch (error) {
@@ -187,6 +209,68 @@ const ProfilePage = () => {
           console.error('Error fetching user applications:', error);
           setUserApplications([]);
         });
+
+        // Get fulfilled requests (both regular and custom) where user was the fulfiller
+        const fetchFulfilledRequests = async () => {
+          try {
+            // Check regular requests
+            const regularRequestsQuery = query(
+              collection(db, "requests"),
+              where("fulfilledBy", "==", currentUser.uid)
+            );
+
+            const customRequestsQuery = query(
+              collection(db, "food-requests"),
+              where("fulfilledBy", "==", currentUser.uid)
+            );
+
+            const unsubscribeRegularFulfilled = onSnapshot(regularRequestsQuery, (snapshot) => {
+              const regularFulfilled = [];
+              snapshot.forEach((doc) => {
+                regularFulfilled.push({
+                  id: doc.id,
+                  ...doc.data(),
+                  type: 'regular',
+                  requestType: 'regular'
+                });
+              });
+
+              const unsubscribeCustomFulfilled = onSnapshot(customRequestsQuery, (snapshot) => {
+                const customFulfilled = [];
+                snapshot.forEach((doc) => {
+                  customFulfilled.push({
+                    id: doc.id,
+                    ...doc.data(),
+                    type: 'custom',
+                    requestType: 'custom'
+                  });
+                });
+
+                const allFulfilled = [...regularFulfilled, ...customFulfilled];
+
+                // Sort by fulfilledAt date (newest first) in memory since we can't use orderBy with where clauses without indexes
+                allFulfilled.sort((a, b) => {
+                  const aDate = a.fulfilledAt?.toDate?.() || new Date(a.fulfilledAt || 0);
+                  const bDate = b.fulfilledAt?.toDate?.() || new Date(b.fulfilledAt || 0);
+                  return bDate - aDate;
+                });
+
+                console.log('ProfilePage: Loaded fulfilled requests:', allFulfilled.length);
+                setFulfilledRequests(allFulfilled);
+                setDataLoaded(prev => ({ ...prev, fulfilledRequests: true }));
+              });
+
+              return () => unsubscribeCustomFulfilled();
+            });
+
+            return () => unsubscribeRegularFulfilled();
+          } catch (error) {
+            console.error('Error fetching fulfilled requests:', error);
+            setDataLoaded(prev => ({ ...prev, fulfilledRequests: true }));
+          }
+        };
+
+        fetchFulfilledRequests();
 
         return () => {
           unsubscribeDonations();
@@ -646,6 +730,18 @@ const ProfilePage = () => {
                   >
                     🌟 Impact & Analytics
                   </button>
+                  {fulfilledRequests.length > 0 && (
+                    <button
+                      onClick={() => setActiveTab("fulfilled")}
+                      className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-300 whitespace-nowrap ${
+                        activeTab === "fulfilled"
+                          ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg transform scale-105"
+                          : "text-gray-600 hover:text-gray-800 hover:bg-white/50"
+                      }`}
+                    >
+                      🎯 Fulfilled Requests ({fulfilledRequests.length})
+                    </button>
+                  )}
                 </>
               )}
               
@@ -1082,6 +1178,124 @@ const ProfilePage = () => {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Fulfilled Requests Tab */}
+          {activeTab === "fulfilled" && (
+            <div>
+              {fulfilledRequests.length > 0 ? (
+                <div className="space-y-6">
+                  {fulfilledRequests.map((request) => (
+                    <div key={`${request.requestType}-${request.id}`} className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300">
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="flex items-start space-x-4">
+                          <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-2xl flex items-center justify-center text-2xl text-white shadow-lg">
+                            🎯
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold text-gray-800 mb-1">
+                              {request.foodItem || request.foodType?.replace('-', ' ') || 'Food Request'}
+                            </h3>
+                            <p className="text-gray-600 flex items-center mb-2">
+                              📍 {request.location || 'Location not specified'}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                request.urgency === 'urgent' ? 'bg-red-100 text-red-800' :
+                                request.urgency === 'high' ? 'bg-orange-100 text-orange-800' :
+                                request.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {request.urgency === 'urgent' ? '🚨' : request.urgency === 'high' ? '⚡' : '📅'} {request.urgency || 'normal'} priority
+                              </span>
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                ✅ Fulfilled
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-green-50/70 rounded-2xl">
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-green-800">{request.quantity}</div>
+                          <div className="text-xs text-green-600">Quantity Requested</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-green-800">{formatDate(request.createdAt)}</div>
+                          <div className="text-xs text-green-600">Request Date</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-green-800">{formatDate(request.fulfilledAt)}</div>
+                          <div className="text-xs text-green-600">Fulfilled Date</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-green-800">{request.requesterName || request.applicantName || 'Anonymous'}</div>
+                          <div className="text-xs text-green-600">Requester</div>
+                        </div>
+                      </div>
+
+                      {request.description && (
+                        <div className="mb-4 p-4 bg-gray-50/70 rounded-2xl">
+                          <h4 className="font-bold text-gray-800 mb-2">Original Request Details:</h4>
+                          <p className="text-gray-700">{request.description}</p>
+                        </div>
+                      )}
+
+                      {request.dietary && (
+                        <div className="mb-4 p-4 bg-orange-50/70 rounded-2xl border border-orange-200">
+                          <h4 className="font-bold text-orange-800 mb-2">🍽️ Dietary Requirements:</h4>
+                          <p className="text-orange-700">{request.dietary}</p>
+                        </div>
+                      )}
+
+                      <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl border border-green-200">
+                        <h4 className="font-bold text-green-800 mb-2 flex items-center">
+                          🤝 Impact Summary
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <p className="text-green-700">
+                              <span className="font-medium">✅ Status:</span> Successfully fulfilled by your donation
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-green-700">
+                              <span className="font-medium">💚 Impact:</span> You helped someone get exactly what they needed!
+                            </p>
+                          </div>
+                          {request.donationId && (
+                            <div className="md:col-span-2">
+                              <p className="text-green-700">
+                                <span className="font-medium">📦 Donation ID:</span> {request.donationId}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-12 text-center">
+                  <div className="text-8xl mb-6">🎯</div>
+                  <h3 className="text-3xl font-bold text-gray-800 mb-4">
+                    No Fulfilled Requests Yet
+                  </h3>
+                  <p className="text-gray-600 text-lg mb-8 max-w-md mx-auto">
+                    When you donate food to fulfill specific community requests, they'll be tracked here.
+                  </p>
+                  <div className="flex gap-4 justify-center">
+                    <a href="/requests" className="inline-block px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                      🙋‍♀️ Browse Requests
+                    </a>
+                    <a href="/donate" className="inline-block px-6 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                      🎁 Donate Food
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
