@@ -16,6 +16,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNotification } from "../contexts/NotificationContext";
 import { useHousehold } from "../hooks/useHousehold";
 import HouseholdRegistration from "../components/common/HouseholdRegistration";
+import ProtectedRoute from "../components/auth/ProtectedRoute";
 
 const ProfilePage = () => {
   const { currentUser, logout } = useAuth();
@@ -487,6 +488,7 @@ const ProfilePage = () => {
   };
 
   return (
+    <ProtectedRoute message="You need to sign in to view and manage your profile, donations, applications, and household information.">
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Beautiful Header */}
@@ -1728,6 +1730,7 @@ const ProfilePage = () => {
         />
       )}
     </div>
+    </ProtectedRoute>
   );
 };
 

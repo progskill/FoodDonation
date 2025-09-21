@@ -20,6 +20,7 @@ import DonationCard from "../components/common/DonationCard";
 import DonationMap from "../components/common/DonationMap";
 import SearchFilters from "../components/common/SearchFilters";
 import HouseholdRegistration from "../components/common/HouseholdRegistration";
+import ProtectedRoute from "../components/auth/ProtectedRoute";
 
 // Helper function to check if donation is urgent (expires within 5 days)
 const checkIfUrgent = (expirationDate) => {
@@ -468,6 +469,7 @@ const DonationsPage = () => {
   }
 
   return (
+    <ProtectedRoute message="You need to create an account to browse and apply for food donations. This helps us ensure fair distribution and verify legitimate applications.">
     <div className="min-h-screen py-8 px-4 bg-gradient-to-br from-green-50 via-white to-blue-50">
       <div className="max-w-7xl mx-auto">
         {/* Enhanced Header */}
@@ -562,13 +564,10 @@ const DonationsPage = () => {
             {filteredDonations.length > 0 ? (
               <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                 {filteredDonations.map((donation) => (
-                  <EnhancedDonationCard 
-                    key={donation.id} 
-                    donation={donation} 
+                  <DonationCard
+                    key={donation.id}
+                    donation={donation}
                     onApply={() => handleApplyForDonation(donation)}
-                    userApplications={userApplications}
-                    getStatusColor={getStatusColor}
-                    getStatusText={getStatusText}
                   />
                 ))}
               </div>
@@ -684,18 +683,117 @@ const DonationsPage = () => {
           </div>
         </div>
         
-        {/* Application Modal */}
+        {/* Enhanced Application Modal */}
         {showApplicationModal && selectedDonation && (
-          <ApplicationModal 
-            donation={selectedDonation}
-            applicationQuantity={applicationQuantity}
-            setApplicationQuantity={setApplicationQuantity}
-            onSubmit={submitApplication}
-            onClose={() => setShowApplicationModal(false)}
-            maxDailyPickup={Math.floor(donations.reduce((total, d) => total + (d.originalQuantity || d.quantity || 0), 0) * 0.3)}
-            currentDailyCount={dailyPickupCount}
-            household={household}
-          />
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white/95 backdrop-blur-md rounded-3xl max-w-lg w-full p-8 shadow-2xl border border-white/20 max-h-[90vh] overflow-y-auto">
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-xl mb-4">
+                  <span className="text-2xl">🤝</span>
+                </div>
+                <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600 mb-2">
+                  Apply for Food Donation
+                </h3>
+                <p className="text-gray-600">
+                  Help us ensure fair distribution by specifying your household needs
+                </p>
+                <button
+                  onClick={() => setShowApplicationModal(false)}
+                  className="absolute top-4 right-4 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center text-gray-500 hover:text-gray-700 transition-all shadow-lg"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Donation Summary */}
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 mb-6 border border-blue-100">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+                    🍽️
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-bold text-blue-800">{selectedDonation.foodItem}</h4>
+                    <p className="text-sm text-blue-600 flex items-center">
+                      <span className="mr-1">📍</span>
+                      {selectedDonation.location}
+                    </p>
+                    <p className="text-sm text-blue-600 flex items-center mt-1">
+                      <span className="mr-1">📊</span>
+                      {selectedDonation.remainingQuantity || selectedDonation.quantity} servings available
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quantity Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center">
+                  <span className="mr-2">🥄</span>
+                  How many servings do you need?
+                </label>
+                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-white/40">
+                  <input
+                    type="number"
+                    value={applicationQuantity}
+                    onChange={(e) => setApplicationQuantity(parseInt(e.target.value) || 1)}
+                    min="1"
+                    max={selectedDonation.remainingQuantity || selectedDonation.quantity}
+                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all text-center text-2xl font-bold text-gray-800"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-2">
+                    <span>Minimum: 1</span>
+                    <span>Maximum: {selectedDonation.remainingQuantity || selectedDonation.quantity}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Household Info */}
+              {household && (
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 mb-6 border border-green-100">
+                  <h4 className="font-bold text-green-800 mb-2 flex items-center">
+                    <span className="mr-2">🏠</span>
+                    Your Household
+                  </h4>
+                  <div className="text-sm text-green-700 space-y-1">
+                    <p><strong>Name:</strong> {household.householdName}</p>
+                    <p><strong>Size:</strong> {Object.keys(household.members || {}).length} members</p>
+                    <p><strong>Daily Pickup:</strong> {dailyPickupCount} servings today</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Application Guidelines */}
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl p-6 mb-6">
+                <div className="flex items-center space-x-3 mb-3">
+                  <span className="text-2xl">📋</span>
+                  <h4 className="font-bold text-yellow-800">Application Guidelines</h4>
+                </div>
+                <ul className="text-sm text-yellow-700 space-y-2">
+                  <li>• Applications are reviewed to ensure fair distribution</li>
+                  <li>• Contact the donor within 24 hours if approved</li>
+                  <li>• Be flexible with pickup times</li>
+                  <li>• Express gratitude - kindness builds community! 💛</li>
+                </ul>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowApplicationModal(false)}
+                  className="flex-1 py-4 bg-white/80 hover:bg-white border-2 border-gray-200 hover:border-gray-300 text-gray-700 rounded-xl font-semibold transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitApplication}
+                  disabled={!applicationQuantity || applicationQuantity < 1}
+                  className="flex-1 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+                >
+                  🤝 Submit Application
+                </button>
+              </div>
+            </div>
+          </div>
         )}
         
         {/* Household Registration Modal */}
@@ -712,489 +810,107 @@ const DonationsPage = () => {
         
         {/* Custom Request Modal */}
         {showRequestModal && (
-          <CustomRequestModal
-            customRequest={customRequest}
-            onInputChange={handleCustomRequestInputChange}
-            onSubmit={submitCustomRequest}
-            onClose={() => setShowRequestModal(false)}
-          />
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Request Specific Food</h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Food Item *
+                  </label>
+                  <input
+                    type="text"
+                    name="foodItem"
+                    value={customRequest.foodItem}
+                    onChange={handleCustomRequestInputChange}
+                    placeholder="e.g., Fresh vegetables, Rice, Bread"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-orange-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Quantity *
+                  </label>
+                  <input
+                    type="text"
+                    name="quantity"
+                    value={customRequest.quantity}
+                    onChange={handleCustomRequestInputChange}
+                    placeholder="e.g., 5 servings, 2-3 meals"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-orange-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Location *
+                  </label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={customRequest.location}
+                    onChange={handleCustomRequestInputChange}
+                    placeholder="Your area or pickup preference"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-orange-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Contact Info *
+                  </label>
+                  <input
+                    type="text"
+                    name="contactInfo"
+                    value={customRequest.contactInfo}
+                    onChange={handleCustomRequestInputChange}
+                    placeholder="Phone number or email"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-orange-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    name="description"
+                    value={customRequest.description}
+                    onChange={handleCustomRequestInputChange}
+                    placeholder="Additional details about your request"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-orange-500"
+                    rows="3"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setShowRequestModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitCustomRequest}
+                  disabled={!customRequest.foodItem || !customRequest.quantity || !customRequest.contactInfo}
+                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
+                >
+                  Post Request
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
-  );
-};
-
-// Enhanced Donation Card Component
-const EnhancedDonationCard = ({ donation, onApply, userApplications, getStatusColor, getStatusText }) => {
-  const { currentUser } = useAuth();
-  const [showDetails, setShowDetails] = useState(false);
-  
-  const householdApplied = userApplications.some(app => app.donationId === donation.id);
-  const isOwnDonation = currentUser && donation.donorId === currentUser.uid;
-  const canApply = (donation.status === "available" || donation.status === "partially_claimed") && !isOwnDonation;
-  
-  const formatDate = (timestamp) => {
-    if (!timestamp) return 'N/A';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString();
-  };
-  
-  const getTimeAgo = (timestamp) => {
-    if (!timestamp) return '';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
-  };
-  
-  return (
-    <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 relative">
-      {/* Urgent Banner */}
-      {donation.isUrgent && (
-        <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2 text-sm font-bold text-center animate-pulse">
-          ⚠️ URGENT: Pick up soon - expires within 5 days!
-        </div>
-      )}
-      
-      {/* Header */}
-      <div className="p-6 pb-4">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex-1">
-            <h3 className="text-xl font-bold text-gray-800 mb-2">
-              {donation.foodItem}
-            </h3>
-            <p className="text-sm text-gray-600 flex items-center">
-              <span className="mr-1">📍</span>
-              {donation.location}
-            </p>
-          </div>
-          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(donation.status)}`}>
-            {getStatusText(donation.status)}
-          </span>
-        </div>
-        
-        {/* Quantity Progress */}
-        <div className="mb-4">
-          <div className="flex justify-between text-sm text-gray-600 mb-2">
-            <span>Available: {donation.remainingQuantity}/{donation.originalQuantity || donation.quantity}</span>
-            <span>{Math.round((donation.remainingQuantity / (donation.originalQuantity || donation.quantity)) * 100)}% left</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${Math.max(0, (donation.remainingQuantity / (donation.originalQuantity || donation.quantity)) * 100)}%` }}
-            ></div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Details */}
-      <div className="px-6 space-y-3 text-sm text-gray-600">
-        {donation.expirationDate && (
-          <div className="flex items-center">
-            <span className="w-4 h-4 mr-3">📅</span>
-            <span>Best before: {formatDate(donation.expirationDate)}</span>
-          </div>
-        )}
-        <div className="flex items-center">
-          <span className="w-4 h-4 mr-3">👤</span>
-          <span>Donor: {donation.donorName || 'Anonymous'}</span>
-        </div>
-        <div className="flex items-center">
-          <span className="w-4 h-4 mr-3">⏰</span>
-          <span>Posted: {getTimeAgo(donation.createdAt)}</span>
-        </div>
-        <div className="flex items-center">
-          <span className="w-4 h-4 mr-3">👥</span>
-          <span>Applications: {donation.applicants?.length || 0}</span>
-        </div>
-      </div>
-      
-      {/* Description */}
-      {donation.description && (
-        <div className="p-6 pt-4">
-          <div className="bg-gray-50/70 p-4 rounded-xl text-sm text-gray-700">
-            {donation.description}
-          </div>
-        </div>
-      )}
-      
-      {/* Actions */}
-      <div className="p-6 pt-4 flex flex-col sm:flex-row gap-3">
-        {isOwnDonation ? (
-          <div className="flex-1 text-center py-3 bg-gradient-to-r from-green-50 to-blue-50 text-green-700 font-semibold rounded-xl border-2 border-green-200">
-            🎁 Your Donation - Cannot Apply
-          </div>
-        ) : canApply && !householdApplied ? (
-          <>
-            <button
-              onClick={onApply}
-              className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-            >
-              🤝 Apply for This Food
-            </button>
-            <button
-              onClick={() => setShowDetails(true)}
-              className="bg-white border-2 border-gray-300 text-gray-700 font-semibold py-3 px-4 rounded-xl hover:border-gray-400 transition-all"
-            >
-              📞 Contact
-            </button>
-          </>
-        ) : householdApplied ? (
-          <div className="flex-1 text-center py-3 bg-blue-50 text-blue-700 font-semibold rounded-xl">
-            ✅ Household Applied
-          </div>
-        ) : (
-          <div className="flex-1 text-center py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl">
-            {donation.status === 'fully_booked' ? '🔴 Fully Booked' : '⏳ Not Available'}
-          </div>
-        )}
-      </div>
-      
-      {/* Contact Details Modal */}
-      {showDetails && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">Contact Information</h3>
-              <button 
-                onClick={() => setShowDetails(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <strong className="text-gray-800">Food Item:</strong>
-                <p className="text-gray-600">{donation.foodItem}</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <strong className="text-gray-800">Pickup Location:</strong>
-                <p className="text-gray-600">{donation.location}</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <strong className="text-gray-800">Contact:</strong>
-                <p className="text-gray-600">{donation.contactInfo}</p>
-              </div>
-            </div>
-
-            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-              <p className="text-sm text-yellow-800">
-                <strong>📞 Next Steps:</strong><br />
-                Contact the donor to coordinate pickup and get detailed directions.
-              </p>
-            </div>
-
-            <button
-              onClick={() => setShowDetails(false)}
-              className="w-full mt-6 bg-gradient-to-r from-green-500 to-blue-500 text-white font-semibold py-3 rounded-xl"
-            >
-              Got It!
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Application Modal Component
-const ApplicationModal = ({ donation, applicationQuantity, setApplicationQuantity, onSubmit, onClose, maxDailyPickup, currentDailyCount, household }) => {
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-fade-in">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold">Apply for Food</h3>
-          <button 
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
-          >
-            ×
-          </button>
-        </div>
-        
-        <div className="space-y-6">
-          {/* Donation Info */}
-          <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl">
-            <h4 className="font-semibold text-gray-800 mb-2">{donation.foodItem}</h4>
-            <p className="text-sm text-gray-600">📍 {donation.location}</p>
-            <p className="text-sm text-gray-600">Available: {donation.remainingQuantity} servings</p>
-          </div>
-          
-          {/* Quantity Selection */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              How many servings would you like?
-            </label>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setApplicationQuantity(Math.max(1, applicationQuantity - 1))}
-                className="w-10 h-10 rounded-full bg-gray-200 text-gray-700 font-bold hover:bg-gray-300 transition-all"
-              >
-                −
-              </button>
-              <div className="text-2xl font-bold text-gray-800 min-w-12 text-center">
-                {applicationQuantity}
-              </div>
-              <button
-                onClick={() => {
-                  const originalQty = parseInt(donation.originalQuantity) || parseInt(donation.quantity) || 0;
-                  const remainingQty = donation.remainingQuantity;
-                  const householdSize = household?.memberCount || household?.members?.length || 0;
-                  const householdPercentage = householdSize >= 7 ? 0.35 : 0.30;
-                  
-                  // Calculate max allowed for this donation
-                  let maxForDonation;
-                  if (remainingQty <= 3) {
-                    maxForDonation = remainingQty;
-                  } else {
-                    maxForDonation = Math.max(1, Math.ceil(originalQty * householdPercentage));
-                  }
-                  
-                  setApplicationQuantity(Math.min(
-                    remainingQty,
-                    maxForDonation,
-                    maxDailyPickup - currentDailyCount,
-                    applicationQuantity + 1
-                  ));
-                }}
-                className="w-10 h-10 rounded-full bg-gray-200 text-gray-700 font-bold hover:bg-gray-300 transition-all"
-              >
-                +
-              </button>
-            </div>
-            <div className="text-xs text-gray-600 mt-2 space-y-1">
-              <p>Daily limit: {currentDailyCount + applicationQuantity}/{maxDailyPickup} servings</p>
-              <p className="text-orange-600 font-medium">
-                Max per donation: {(() => {
-                  const originalQty = parseInt(donation.originalQuantity) || parseInt(donation.quantity) || 0;
-                  const remainingQty = donation.remainingQuantity;
-                  const householdSize = household?.memberCount || household?.members?.length || 0;
-                  const householdPercentage = householdSize >= 7 ? 0.35 : 0.30;
-                  const percentageText = householdSize >= 7 ? '35%' : '30%';
-                  
-                  if (remainingQty <= 3) {
-                    return `${remainingQty} (small amount exception)`;
-                  } else {
-                    return `${Math.max(1, Math.ceil(originalQty * householdPercentage))} (${percentageText} of ${originalQty} - ${householdSize >= 7 ? 'Large' : 'Regular'} household)`;
-                  }
-                })()}
-              </p>
-            </div>
-          </div>
-          
-          {/* Guidelines */}
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-            <h4 className="font-semibold text-yellow-800 mb-2">📋 Pickup Guidelines</h4>
-            <ul className="text-sm text-yellow-700 space-y-1">
-              <li>• Contact the donor within 24 hours</li>
-              <li>• Be respectful and punctual</li>
-              <li>• Bring your own containers if needed</li>
-            </ul>
-          </div>
-          
-          {/* Actions */}
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 border-2 border-gray-300 text-gray-700 font-semibold py-3 rounded-xl hover:border-gray-400 transition-all"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onSubmit}
-              disabled={(() => {
-                const originalQty = parseInt(donation.originalQuantity) || parseInt(donation.quantity) || 0;
-                const remainingQty = donation.remainingQuantity;
-                const householdSize = household?.memberCount || household?.members?.length || 0;
-                const householdPercentage = householdSize >= 7 ? 0.35 : 0.30;
-                let maxForDonation;
-                if (remainingQty <= 3) {
-                  maxForDonation = remainingQty;
-                } else {
-                  maxForDonation = Math.max(1, Math.ceil(originalQty * householdPercentage));
-                }
-                return applicationQuantity > remainingQty || 
-                       applicationQuantity > maxForDonation ||
-                       currentDailyCount + applicationQuantity > maxDailyPickup;
-              })()}
-              className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              Submit Application
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Custom Request Modal Component
-const CustomRequestModal = ({ customRequest, onInputChange, onSubmit, onClose }) => {
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-red-600">
-            🙋‍♀️ Request Specific Food
-          </h3>
-          <button 
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
-          >
-            ×
-          </button>
-        </div>
-        
-        <div className="space-y-6">
-          {/* Info Banner */}
-          <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200 rounded-xl">
-            <p className="text-sm text-orange-800">
-              <strong>💡 How it works:</strong> Can't find what you need? Post a request and donors in your area will be notified!
-            </p>
-          </div>
-          
-          {/* Food Item */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              🍽️ What food are you looking for? *
-            </label>
-            <input
-              type="text"
-              name="foodItem"
-              value={customRequest.foodItem}
-              onChange={onInputChange}
-              placeholder="e.g., Baby formula, Gluten-free bread, Fresh vegetables"
-              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
-              required
-            />
-          </div>
-          
-          {/* Quantity and Urgency */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                📊 How much? *
-              </label>
-              <input
-                type="text"
-                name="quantity"
-                value={customRequest.quantity}
-                onChange={onInputChange}
-                placeholder="e.g., 2 cans, 1 bag, 5 servings"
-                className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                ⚡ Urgency
-              </label>
-              <select
-                name="urgency"
-                value={customRequest.urgency}
-                onChange={onInputChange}
-                className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
-              >
-                <option value="normal">📅 Normal</option>
-                <option value="urgent">🚨 Urgent</option>
-              </select>
-            </div>
-          </div>
-          
-          {/* Location */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              📍 Your area (optional)
-            </label>
-            <input
-              type="text"
-              name="location"
-              value={customRequest.location}
-              onChange={onInputChange}
-              placeholder="e.g., Downtown, Near Central Park, ZIP code"
-              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
-            />
-            <p className="text-xs text-gray-600 mt-2">
-              💡 Help donors find you easier by sharing your general area
-            </p>
-          </div>
-          
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              📝 Additional details (optional)
-            </label>
-            <textarea
-              name="description"
-              value={customRequest.description}
-              onChange={onInputChange}
-              rows={3}
-              placeholder="Why do you need this food? Any dietary restrictions? When do you need it by?"
-              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all resize-none"
-            />
-          </div>
-          
-          {/* Contact Info */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              📞 Contact Information *
-            </label>
-            <input
-              type="text"
-              name="contactInfo"
-              value={customRequest.contactInfo}
-              onChange={onInputChange}
-              placeholder="Phone number, email, or preferred contact method"
-              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
-              required
-            />
-            <div className="mt-2 p-3 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-800">
-                🔒 <strong>Privacy:</strong> Only interested donors will see your contact info
-              </p>
-            </div>
-          </div>
-          
-          {/* Guidelines */}
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-            <h4 className="font-semibold text-yellow-800 mb-2">📋 Request Guidelines</h4>
-            <ul className="text-sm text-yellow-700 space-y-1">
-              <li>• Be specific about what you need</li>
-              <li>• Respond to donors within 24 hours</li>
-              <li>• Be flexible with pickup times</li>
-              <li>• Say thank you - kindness goes a long way! 💛</li>
-            </ul>
-          </div>
-          
-          {/* Actions */}
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 border-2 border-gray-300 text-gray-700 font-semibold py-3 rounded-xl hover:border-gray-400 transition-all"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onSubmit}
-              disabled={!customRequest.foodItem || !customRequest.quantity || !customRequest.contactInfo}
-              className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
-            >
-              🚀 Post Request
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </ProtectedRoute>
   );
 };
 

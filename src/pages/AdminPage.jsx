@@ -13,6 +13,7 @@ import {
 import { db } from "../config/firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotification } from "../contexts/NotificationContext";
+import ProtectedRoute from "../components/auth/ProtectedRoute";
 
 const AdminPage = () => {
   const { currentUser } = useAuth();
@@ -357,6 +358,23 @@ const AdminPage = () => {
     }
   };
 
+  const refreshData = async () => {
+    try {
+      setRefreshing(true);
+
+      // Recalculate stats and chart data
+      calculateStats();
+      generateChartData();
+
+      showSuccess("Data refreshed successfully");
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      showError("Failed to refresh data");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const formatDate = (timestamp) => {
     if (!timestamp) return "N/A";
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -517,73 +535,161 @@ const AdminPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4">
-            🔧 Admin Dashboard
-          </h1>
-          <p className="text-gray-600 text-xl">
-            Comprehensive management for Community Food Bank
-          </p>
-          {refreshing && (
-            <div className="mt-2 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent mr-2"></div>
-              <span className="text-sm text-blue-600">Updating...</span>
-            </div>
-          )}
-        </div>
+    <ProtectedRoute message="Admin access is restricted to authorized administrators only. Please contact support if you believe you should have admin access.">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      {/* Top Navigation Bar (Red) */}
+      <nav className="bg-gradient-to-r from-red-500 to-red-600 shadow-lg h-16 flex items-center justify-between px-6 relative z-50">
+        <div className="flex items-center space-x-4">
+          {/* Mobile Menu Button */}
+          <button className="lg:hidden w-8 h-8 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors">
+            <span className="text-white text-lg">☰</span>
+          </button>
 
-        {/* Navigation Tabs */}
-        <div className="flex flex-wrap justify-center mb-8">
-          <div className="inline-flex rounded-2xl border-2 border-white/20 bg-white/70 backdrop-blur-sm shadow-lg p-1">
-            {[
-              { id: "dashboard", label: "📊 Dashboard", count: null },
-              {
-                id: "donations",
-                label: "🎁 Donations",
-                count: donations.length,
-              },
-              {
-                id: "requests",
-                label: "📝 Requests",
-                count: requests.length + customRequests.length,
-              },
-              {
-                id: "households",
-                label: "🏠 Households",
-                count: households.length,
-              },
-              {
-                id: "applications",
-                label: "📋 Applications",
-                count: applications.length,
-              },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-300 whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105"
-                    : "text-gray-600 hover:text-gray-800 hover:bg-white/50"
-                }`}
-              >
-                {tab.label}
-                {tab.count !== null && (
-                  <span
-                    className={`ml-1 px-2 py-0.5 rounded-full text-xs ${
-                      activeTab === tab.id ? "bg-white/20" : "bg-gray-200"
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            ))}
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <span className="text-2xl text-white">🔧</span>
+            </div>
+            <div className="hidden sm:block">
+              <h1 className="text-xl font-bold text-white">Admin Dashboard</h1>
+              <p className="text-red-100 text-xs">Community Food Bank Management</p>
+            </div>
           </div>
         </div>
+
+        <div className="flex items-center space-x-4">
+          {refreshing && (
+            <div className="flex items-center text-white">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white mr-2"></div>
+              <span className="text-sm">Updating...</span>
+            </div>
+          )}
+
+          <div className="flex items-center space-x-3 text-white">
+            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+              <span className="text-sm">👤</span>
+            </div>
+            <div className="text-sm">
+              <p className="font-medium">{currentUser?.email?.split('@')[0] || 'Admin'}</p>
+              <p className="text-red-100 text-xs">Administrator</p>
+            </div>
+          </div>
+
+          <button className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors">
+            <span className="text-white text-lg">⚙️</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Main Layout Container */}
+      <div className="flex flex-1">
+        {/* Left Sidebar (Green) */}
+        <aside className="w-64 bg-gradient-to-b from-green-500 to-green-600 shadow-lg flex flex-col lg:flex hidden lg:w-64 md:w-48">
+          <div className="p-6">
+            <h2 className="text-white font-bold text-lg mb-6">Navigation</h2>
+            <nav className="space-y-2">
+              {[
+                { id: "dashboard", label: "📊 Dashboard", count: null },
+                { id: "donations", label: "🎁 Donations", count: donations.length },
+                { id: "requests", label: "📝 Requests", count: requests.length + customRequests.length },
+                { id: "households", label: "🏠 Households", count: households.length },
+                { id: "applications", label: "📋 Applications", count: applications.length },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 group ${
+                    activeTab === tab.id
+                      ? "bg-white/20 text-white shadow-lg transform scale-105"
+                      : "text-green-100 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center space-x-3">
+                      <span className="text-lg">{tab.label.split(' ')[0]}</span>
+                      <span className="font-medium">{tab.label.split(' ').slice(1).join(' ')}</span>
+                    </span>
+                    {tab.count !== null && (
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                        activeTab === tab.id
+                          ? "bg-white/30 text-white"
+                          : "bg-green-400 text-green-900"
+                      }`}>
+                        {tab.count}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {/* Sidebar Footer */}
+          <div className="mt-auto p-6 border-t border-green-400/30">
+            <div className="bg-white/10 rounded-lg p-4">
+              <div className="flex items-center space-x-3 mb-3">
+                <span className="text-white text-lg">📊</span>
+                <span className="text-white font-medium">Quick Stats</span>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between text-green-100">
+                  <span>Total Users:</span>
+                  <span className="font-bold text-white">{households.length}</span>
+                </div>
+                <div className="flex justify-between text-green-100">
+                  <span>Active Donations:</span>
+                  <span className="font-bold text-white">{donations.filter(d => d.status === 'available').length}</span>
+                </div>
+                <div className="flex justify-between text-green-100">
+                  <span>Pending Apps:</span>
+                  <span className="font-bold text-white">{applications.filter(a => a.status === 'pending').length}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content Area (Blue) */}
+        <main className="flex-1 bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 overflow-auto">
+          <div className="p-4 lg:p-8">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 min-h-[calc(100vh-12rem)] p-4 lg:p-8">
+                {/* Content Header */}
+                <div className="border-b border-white/20 pb-6 mb-8">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
+                    <div>
+                      <h1 className="text-2xl lg:text-3xl font-bold text-white capitalize">
+                        {activeTab === "dashboard" ? "📊 Dashboard Overview" :
+                         activeTab === "donations" ? "🎁 Donations Management" :
+                         activeTab === "requests" ? "📝 Requests Management" :
+                         activeTab === "households" ? "🏠 Households Management" :
+                         activeTab === "applications" ? "📋 Applications Management" : "Admin Panel"}
+                      </h1>
+                      <p className="text-blue-100 mt-2">
+                        {activeTab === "dashboard" ? "Real-time insights and analytics" :
+                         activeTab === "donations" ? "Monitor and manage food donations" :
+                         activeTab === "requests" ? "Review and process food requests" :
+                         activeTab === "households" ? "Manage registered households" :
+                         activeTab === "applications" ? "Review donation applications" : "Administrative controls"}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <button className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors flex items-center space-x-2">
+                        <span>📊</span>
+                        <span>Export</span>
+                      </button>
+                      <button
+                        onClick={refreshData}
+                        disabled={refreshing}
+                        className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors flex items-center space-x-2 disabled:opacity-50"
+                      >
+                        <span className={refreshing ? "animate-spin" : ""}>🔄</span>
+                        <span>Refresh</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content Body */}
+                <div className="text-white">
 
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && (
@@ -1510,8 +1616,14 @@ const AdminPage = () => {
             </div>
           </div>
         )}
+
+                </div>
+            </div>
+          </div>
+        </main>
       </div>
     </div>
+    </ProtectedRoute>
   );
 };
 

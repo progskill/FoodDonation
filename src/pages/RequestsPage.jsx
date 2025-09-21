@@ -12,6 +12,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNotification } from "../contexts/NotificationContext";
 import RequestCard from "../components/common/RequestCard";
 import SearchFilters from "../components/common/SearchFilters";
+import ProtectedRoute from "../components/auth/ProtectedRoute";
 
 const RequestsPage = () => {
   const { currentUser } = useAuth();
@@ -158,6 +159,7 @@ const RequestsPage = () => {
   }
 
   return (
+    <ProtectedRoute message="You need to create an account to view community food requests and donate food to fulfill specific needs.">
     <div className="min-h-screen py-8 px-4 bg-gradient-to-br from-orange-50 via-white to-red-50">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -348,6 +350,7 @@ const RequestsPage = () => {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 };
 

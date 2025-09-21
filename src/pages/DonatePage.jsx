@@ -5,11 +5,14 @@ import { db } from "../config/firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotification } from "../contexts/NotificationContext";
 import LocationPicker from "../components/common/LocationPicker";
+import ProtectedRoute from "../components/auth/ProtectedRoute";
+import CashDonation from "../components/donation/CashDonation";
 
 const DonatePage = () => {
   const { currentUser, isGuest } = useAuth();
   const { showSuccess, showError, notifyNewDonation } = useNotification();
 
+  const [donationType, setDonationType] = useState("food"); // "food" or "cash"
   const [formData, setFormData] = useState({
     foodItem: "",
     quantity: "",
@@ -236,58 +239,97 @@ const DonatePage = () => {
   };
 
   return (
+    <ProtectedRoute message="You need to create an account to share food donations with the community. This helps us maintain security and track donations properly.">
     <div className="min-h-screen py-8 px-4 bg-gradient-to-br from-green-50 via-white to-blue-50">
       <div className="max-w-4xl mx-auto">
         {/* Progress Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-blue-600 mb-4">
-            🍎 Donate Food to Your Community
+            {donationType === "food" ? "🍎 Donate Food to Your Community" : "💰 Make a Cash Donation"}
           </h1>
           <p className="text-gray-600 text-lg mb-4">
-            Turn your extra food into hope for someone in need
+            {donationType === "food"
+              ? "Turn your extra food into hope for someone in need"
+              : "Your financial contribution helps us serve the community better"
+            }
           </p>
 
-          {/* Browse Requests Link */}
-          <div className="mb-8">
-            <a
-              href="/requests"
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-            >
-              🙋‍♀️ Browse Food Requests
-              <span className="ml-2 text-sm opacity-90">→ See what people need</span>
-            </a>
+          {/* Donation Type Selection */}
+          <div className="mb-6">
+            <div className="inline-flex bg-white/70 backdrop-blur-sm rounded-2xl p-2 border-2 border-gray-200 shadow-lg">
+              <button
+                onClick={() => setDonationType("food")}
+                className={`px-8 py-3 rounded-xl font-semibold transition-all ${
+                  donationType === "food"
+                    ? "bg-gradient-to-r from-green-500 to-blue-500 text-white shadow-lg"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
+              >
+                🍎 Donate Food
+              </button>
+              <button
+                onClick={() => setDonationType("cash")}
+                className={`px-8 py-3 rounded-xl font-semibold transition-all ${
+                  donationType === "cash"
+                    ? "bg-gradient-to-r from-green-500 to-blue-500 text-white shadow-lg"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
+              >
+                💰 Donate Cash
+              </button>
+            </div>
           </div>
-          
-          {/* Progress Steps */}
-          <div className="flex justify-center items-center space-x-4 mb-8">
-            {[1, 2, 3].map((step) => (
-              <div key={step} className="flex items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
-                  currentStep >= step 
-                    ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white shadow-lg' 
-                    : 'bg-gray-200 text-gray-500'
-                }`}>
-                  {currentStep > step ? '✓' : step}
-                </div>
-                {step < 3 && (
-                  <div className={`w-12 h-1 mx-2 transition-all ${
-                    currentStep > step ? 'bg-gradient-to-r from-green-500 to-blue-500' : 'bg-gray-200'
-                  }`} />
-                )}
+
+          {/* Browse Requests Link - Only show for food donations */}
+          {donationType === "food" && (
+            <div className="mb-8">
+              <a
+                href="/requests"
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+              >
+                🙋‍♀️ Browse Food Requests
+                <span className="ml-2 text-sm opacity-90">→ See what people need</span>
+              </a>
+            </div>
+          )}
+
+          {/* Progress Steps - Only show for food donations */}
+          {donationType === "food" && (
+            <>
+              <div className="flex justify-center items-center space-x-4 mb-8">
+                {[1, 2, 3].map((step) => (
+                  <div key={step} className="flex items-center">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
+                      currentStep >= step
+                        ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white shadow-lg'
+                        : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {currentStep > step ? '✓' : step}
+                    </div>
+                    {step < 3 && (
+                      <div className={`w-12 h-1 mx-2 transition-all ${
+                        currentStep > step ? 'bg-gradient-to-r from-green-500 to-blue-500' : 'bg-gray-200'
+                      }`} />
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          
-          <div className="text-sm text-gray-600">
-            {currentStep === 1 && "📝 Food Details"}
-            {currentStep === 2 && "📍 Location & Contact"}
-            {currentStep === 3 && "✨ Review & Submit"}
-          </div>
+
+              <div className="text-sm text-gray-600">
+                {currentStep === 1 && "📝 Food Details"}
+                {currentStep === 2 && "📍 Location & Contact"}
+                {currentStep === 3 && "✨ Review & Submit"}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
 
-          <form onSubmit={handleSubmit} className="space-y-8">
+          {donationType === "cash" ? (
+            <CashDonation />
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-8">
             {/* Step 1: Food Details */}
             {currentStep === 1 && (
               <div className="space-y-6 animate-fade-in">
@@ -729,6 +771,7 @@ const DonatePage = () => {
               </div>
             )}
           </form>
+          )}
 
           {/* Guest Notice */}
           {(isGuest || !currentUser) && (
@@ -751,6 +794,7 @@ const DonatePage = () => {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 };
 

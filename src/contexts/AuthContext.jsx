@@ -38,10 +38,6 @@ export function AuthProvider({ children }) {
     return signInAnonymously(auth);
   }
 
-  function continueAsGuest() {
-    setIsGuest(true);
-    setCurrentUser({ isGuest: true, uid: "guest-" + Date.now() });
-  }
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -59,7 +55,6 @@ export function AuthProvider({ children }) {
     login,
     logout,
     loginAsGuest,
-    continueAsGuest,
   };
 
   return (

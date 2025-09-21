@@ -11,6 +11,7 @@ import DonationsPage from "./pages/DonationsPage";
 import RequestsPage from "./pages/RequestsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
+import DonationSuccessPage from "./pages/DonationSuccessPage";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
                 <Route path="/requests" element={<RequestsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/admin" element={<AdminPage />} />
+                <Route path="/donation-success" element={<DonationSuccessPage />} />
               </Routes>
             </main>
             <NotificationToast />

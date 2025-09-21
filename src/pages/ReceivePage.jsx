@@ -12,6 +12,7 @@ import { useAuth } from "../contexts/AuthContext";
 import DonationCard from "../components/common/DonationCard";
 import SearchFilters from "../components/common/SearchFilters";
 import RequestForm from "../components/common/RequestForm";
+import ProtectedRoute from "../components/auth/ProtectedRoute";
 
 const ReceivePage = () => {
   const { currentUser, isGuest } = useAuth();
@@ -84,6 +85,7 @@ const ReceivePage = () => {
   }
 
   return (
+    <ProtectedRoute message="You need to create an account to apply for food donations and register your household. This ensures fair distribution and helps us verify legitimate applications.">
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
@@ -227,6 +229,7 @@ const ReceivePage = () => {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 };
 
