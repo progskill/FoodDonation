@@ -587,7 +587,6 @@ const DonatePage = () => {
                       />
                     </div>
 
-                    {/* Step 1 Navigation */}
                     <div className="flex justify-end pt-6">
                       <button
                         type="button"
@@ -601,7 +600,6 @@ const DonatePage = () => {
                   </div>
                 )}
 
-                {/* Step 2: Location & Contact */}
                 {currentStep === 2 && (
                   <div className="space-y-6 animate-fade-in">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
@@ -611,7 +609,6 @@ const DonatePage = () => {
                       Where can people pick it up?
                     </h2>
 
-                    {/* Location Type Selection */}
                     <div className="bg-gray-50 p-6 rounded-xl">
                       <label className="block text-sm font-semibold text-gray-700 mb-4">
                         📍 How would you like to provide pickup location?
@@ -674,7 +671,6 @@ const DonatePage = () => {
                         </label>
                       </div>
 
-                      {/* Location Input */}
                       {formData.useManualLocation ? (
                         <div>
                           <input
@@ -701,7 +697,6 @@ const DonatePage = () => {
                       )}
                     </div>
 
-                    {/* Contact Info */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
                         📞 How can people reach you?
@@ -723,7 +718,6 @@ const DonatePage = () => {
                       </div>
                     </div>
 
-                    {/* Step 2 Navigation */}
                     <div className="flex justify-between pt-6">
                       <button
                         type="button"
@@ -744,7 +738,6 @@ const DonatePage = () => {
                   </div>
                 )}
 
-                {/* Step 3: Review & Submit */}
                 {currentStep === 3 && (
                   <div className="space-y-6 animate-fade-in">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
@@ -754,7 +747,6 @@ const DonatePage = () => {
                       Review your donation
                     </h2>
 
-                    {/* Preview Card */}
                     <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-xl border-2 border-green-200">
                       <h3 className="font-bold text-lg text-gray-800 mb-4 flex items-center">
                         <span className="mr-2">👀</span> Preview how others will
@@ -821,7 +813,6 @@ const DonatePage = () => {
                       </div>
                     </div>
 
-                    {/* Terms & Guidelines */}
                     <div className="bg-yellow-50 p-6 rounded-xl border-2 border-yellow-200">
                       <h3 className="font-bold text-gray-800 mb-4 flex items-center">
                         <span className="mr-2">📋</span> Community Guidelines
@@ -872,7 +863,6 @@ const DonatePage = () => {
                       </div>
                     </div>
 
-                    {/* Step 3 Navigation */}
                     <div className="flex justify-between pt-6">
                       <button
                         type="button"
@@ -902,7 +892,6 @@ const DonatePage = () => {
               </form>
             )}
 
-            {/* Guest Notice */}
             {(isGuest || !currentUser) && (
               <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl">
                 <div className="flex items-start space-x-4">
