@@ -25,7 +25,6 @@ const Navbar = () => {
       <nav className="bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200 fixed top-0 w-full z-50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center h-16">
-            {/* Logo */}
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">🍽️</span>
@@ -155,13 +154,6 @@ const Navbar = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Donate Food
-                </Link>
-                <Link
-                  to="/receive"
-                  className="px-2 py-1 text-gray-700 hover:text-primary-600"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Request Food
                 </Link>
                 <Link
                   to="/requests"
