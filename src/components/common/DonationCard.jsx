@@ -1,14 +1,13 @@
 import React from "react";
 import { useState } from "react";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../../config/firebase";
+// import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+// import { db } from "../../config/firebase";
 import { useAuth } from "../../contexts/AuthContext";
-import { useNotification } from "../../contexts/NotificationContext";
+// import { useNotification } from "../../contexts/NotificationContext";
 
 const DonationCard = ({ donation, onApply }) => {
   const { currentUser, isGuest } = useAuth();
-  const { showSuccess, showError } = useNotification();
-  const [isRequesting, setIsRequesting] = useState(false);
+  // const { showSuccess, showError } = useNotification();
   const [showDetails, setShowDetails] = useState(false);
 
   const formatDate = (timestamp) => {
@@ -29,30 +28,6 @@ const DonationCard = ({ donation, onApply }) => {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     return `${diffDays}d ago`;
-  };
-
-  const handleRequest = async () => {
-    if (!currentUser && !isGuest) {
-      showError("Please sign in or continue as guest to request donations");
-      return;
-    }
-
-    setIsRequesting(true);
-    try {
-      await updateDoc(doc(db, "donations", donation.id), {
-        status: "claimed",
-        claimedBy: currentUser?.uid || "guest",
-        claimedAt: serverTimestamp(),
-        claimerName: currentUser?.email || "Anonymous",
-      });
-
-      showSuccess("Donation requested! Contact the donor to arrange pickup.");
-    } catch (error) {
-      console.error("Error requesting donation:", error);
-      showError("Failed to request donation. Please try again.");
-    } finally {
-      setIsRequesting(false);
-    }
   };
 
   const getStatusColor = (status) => {
