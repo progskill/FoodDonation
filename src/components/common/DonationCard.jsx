@@ -97,9 +97,11 @@ const DonationCard = ({ donation, onApply }) => {
 
   const isUrgent = () => {
     if (!donation.expirationDate) return false;
-    const expDate = donation.expirationDate.toDate ? donation.expirationDate.toDate() : new Date(donation.expirationDate);
+    const expDate = donation.expirationDate.toDate
+      ? donation.expirationDate.toDate()
+      : new Date(donation.expirationDate);
     const now = new Date();
-    const fiveDaysFromNow = new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000));
+    const fiveDaysFromNow = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
     return expDate <= fiveDaysFromNow;
   };
 
@@ -111,189 +113,214 @@ const DonationCard = ({ donation, onApply }) => {
     return donation.originalQuantity || donation.quantity || 0;
   };
 
-  const canApply = (donation.status === "available" || donation.status === "partially_claimed") &&
-                   currentUser &&
-                   donation.donorId !== currentUser.uid;
+  const canApply =
+    (donation.status === "available" ||
+      donation.status === "partially_claimed") &&
+    currentUser &&
+    donation.donorId !== currentUser.uid;
 
   return (
     <>
-    <div className={`relative bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border-2 transition-all duration-300 hover:shadow-2xl hover:scale-105 overflow-hidden ${
-      isUrgent() ? 'border-red-300 bg-gradient-to-br from-red-50/90 to-pink-50/90' : 'border-white/40 bg-gradient-to-br from-white/90 to-blue-50/90'
-    }`}>
-
-      {/* Urgent Banner */}
-      {isUrgent() && (
-        <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-red-500 to-pink-500 text-white text-center py-2 text-sm font-bold shadow-lg">
-          ⚡ URGENT - Expires Soon!
-        </div>
-      )}
-
-      <div className={`p-6 ${isUrgent() ? 'pt-16' : ''}`}>
-        {/* Header */}
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex-1">
-            <div className="flex items-center space-x-3 mb-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg">
-                🍽️
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 leading-tight">
-                  {donation.foodItem}
-                </h3>
-                <p className="text-sm text-gray-500 flex items-center">
-                  <span className="mr-1">📍</span>
-                  {donation.location}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-col items-end space-y-2">
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-md ${getStatusColor(donation.status)}`}>
-              {getStatusText(donation.status)}
-            </span>
-            {donation.isUrgent && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
-                🔥 Urgent
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Quantity Progress Bar */}
-        <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 mb-6 border border-white/40">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-semibold text-gray-700">Available Servings</span>
-            <span className="text-lg font-bold text-blue-600">
-              {getRemainingQuantity()}/{getOriginalQuantity()}
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
-            <div
-              className={`h-3 rounded-full transition-all duration-300 ${
-                getRemainingQuantity() / getOriginalQuantity() > 0.5
-                  ? 'bg-gradient-to-r from-green-400 to-green-500'
-                  : getRemainingQuantity() / getOriginalQuantity() > 0.25
-                  ? 'bg-gradient-to-r from-yellow-400 to-orange-500'
-                  : 'bg-gradient-to-r from-red-400 to-red-500'
-              }`}
-              style={{
-                width: `${Math.max(5, (getRemainingQuantity() / getOriginalQuantity()) * 100)}%`
-              }}
-            ></div>
-          </div>
-        </div>
-
-        {/* Details Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3 border border-white/30">
-            <div className="flex items-center space-x-2">
-              <span className="text-lg">📅</span>
-              <div>
-                <p className="text-xs text-gray-500 font-medium">Expires</p>
-                <p className="text-sm font-bold text-gray-800">
-                  {donation.expirationDate ? formatDate(donation.expirationDate) : 'No expiry'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3 border border-white/30">
-            <div className="flex items-center space-x-2">
-              <span className="text-lg">⏰</span>
-              <div>
-                <p className="text-xs text-gray-500 font-medium">Posted</p>
-                <p className="text-sm font-bold text-gray-800">
-                  {getTimeAgo(donation.createdAt)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3 border border-white/30 col-span-2">
-            <div className="flex items-center space-x-2">
-              <span className="text-lg">👤</span>
-              <div>
-                <p className="text-xs text-gray-500 font-medium">Shared by</p>
-                <p className="text-sm font-bold text-gray-800">
-                  {donation.donorName || "Anonymous Donor"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Description */}
-        {donation.description && (
-          <div className="mb-6">
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-white/40">
-              <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-                <span className="mr-2">📝</span>
-                Details
-              </h4>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                {donation.description}
-              </p>
-            </div>
+      <div
+        className={`relative bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border-2 transition-all duration-300 hover:shadow-2xl hover:scale-105 overflow-hidden ${
+          isUrgent()
+            ? "border-red-300 bg-gradient-to-br from-red-50/90 to-pink-50/90"
+            : "border-white/40 bg-gradient-to-br from-white/90 to-blue-50/90"
+        }`}
+      >
+        {isUrgent() && (
+          <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-red-500 to-pink-500 text-white text-center py-2 text-sm font-bold shadow-lg">
+            ⚡ URGENT - Expires Soon!
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex flex-col gap-3">
-          {canApply ? (
-            <div className="space-y-3">
-              <button
-                onClick={() => onApply && onApply(donation)}
-                className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 flex items-center justify-center space-x-2"
+        <div className={`p-6 ${isUrgent() ? "pt-16" : ""}`}>
+          {/* Header */}
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex-1">
+              <div className="flex items-center space-x-3 mb-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg">
+                  🍽️
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800 leading-tight">
+                    {donation.foodItem}
+                  </h3>
+                  <p className="text-sm text-gray-500 flex items-center">
+                    <span className="mr-1">📍</span>
+                    {donation.location}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col items-end space-y-2">
+              <span
+                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-md ${getStatusColor(
+                  donation.status
+                )}`}
               >
-                <span>🤝</span>
-                <span>Apply for This Food</span>
-              </button>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowDetails(true)}
-                  className="flex-1 py-3 bg-white/80 hover:bg-white border-2 border-blue-200 hover:border-blue-300 text-blue-700 rounded-xl font-semibold transition-all flex items-center justify-center space-x-2"
-                >
-                  <span>📞</span>
-                  <span>Contact</span>
-                </button>
-                <button
-                  className="flex-1 py-3 bg-white/80 hover:bg-white border-2 border-purple-200 hover:border-purple-300 text-purple-700 rounded-xl font-semibold transition-all flex items-center justify-center space-x-2"
-                >
-                  <span>📍</span>
-                  <span>Location</span>
-                </button>
+                {getStatusText(donation.status)}
+              </span>
+              {donation.isUrgent && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                  🔥 Urgent
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Quantity Progress Bar */}
+          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 mb-6 border border-white/40">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-semibold text-gray-700">
+                Available Servings
+              </span>
+              <span className="text-lg font-bold text-blue-600">
+                {getRemainingQuantity()}/{getOriginalQuantity()}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
+              <div
+                className={`h-3 rounded-full transition-all duration-300 ${
+                  getRemainingQuantity() / getOriginalQuantity() > 0.5
+                    ? "bg-gradient-to-r from-green-400 to-green-500"
+                    : getRemainingQuantity() / getOriginalQuantity() > 0.25
+                    ? "bg-gradient-to-r from-yellow-400 to-orange-500"
+                    : "bg-gradient-to-r from-red-400 to-red-500"
+                }`}
+                style={{
+                  width: `${Math.max(
+                    5,
+                    (getRemainingQuantity() / getOriginalQuantity()) * 100
+                  )}%`,
+                }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Details Grid */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3 border border-white/30">
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">📅</span>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Expires</p>
+                  <p className="text-sm font-bold text-gray-800">
+                    {donation.expirationDate
+                      ? formatDate(donation.expirationDate)
+                      : "No expiry"}
+                  </p>
+                </div>
               </div>
             </div>
-          ) : donation.status === "fully_booked" ? (
-            <div className="text-center py-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-red-400 to-pink-500 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-3 shadow-lg">
-                🔴
+
+            <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3 border border-white/30">
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">⏰</span>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Posted</p>
+                  <p className="text-sm font-bold text-gray-800">
+                    {getTimeAgo(donation.createdAt)}
+                  </p>
+                </div>
               </div>
-              <p className="text-lg font-bold text-red-700 mb-1">Fully Booked</p>
-              <p className="text-sm text-red-600">All servings have been claimed</p>
             </div>
-          ) : donation.status === "partially_claimed" && !canApply ? (
-            <div className="text-center py-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-3 shadow-lg">
-                ⚡
+
+            <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3 border border-white/30 col-span-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">👤</span>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Shared by</p>
+                  <p className="text-sm font-bold text-gray-800">
+                    {donation.donorName || "Anonymous Donor"}
+                  </p>
+                </div>
               </div>
-              <p className="text-lg font-bold text-yellow-700 mb-1">Limited Stock</p>
-              <p className="text-sm text-yellow-600">Some servings still available</p>
             </div>
-          ) : (
-            <div className="text-center py-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-gray-400 to-slate-500 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-3 shadow-lg">
-                ✅
+          </div>
+
+          {/* Description */}
+          {donation.description && (
+            <div className="mb-6">
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-white/40">
+                <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                  <span className="mr-2">📝</span>
+                  Details
+                </h4>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {donation.description}
+                </p>
               </div>
-              <p className="text-lg font-bold text-gray-700 mb-1">Not Available</p>
-              <p className="text-sm text-gray-600">
-                {donation.status === "claimed" ? "This donation has been claimed" : "This donation is completed"}
-              </p>
             </div>
           )}
+
+          {/* Actions */}
+          <div className="flex flex-col gap-3">
+            {canApply ? (
+              <div className="space-y-3">
+                <button
+                  onClick={() => onApply && onApply(donation)}
+                  className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 flex items-center justify-center space-x-2"
+                >
+                  <span>🤝</span>
+                  <span>Apply for This Food</span>
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowDetails(true)}
+                    className="flex-1 py-3 bg-white/80 hover:bg-white border-2 border-blue-200 hover:border-blue-300 text-blue-700 rounded-xl font-semibold transition-all flex items-center justify-center space-x-2"
+                  >
+                    <span>📞</span>
+                    <span>Contact</span>
+                  </button>
+                  <button className="flex-1 py-3 bg-white/80 hover:bg-white border-2 border-purple-200 hover:border-purple-300 text-purple-700 rounded-xl font-semibold transition-all flex items-center justify-center space-x-2">
+                    <span>📍</span>
+                    <span>Location</span>
+                  </button>
+                </div>
+              </div>
+            ) : donation.status === "fully_booked" ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-red-400 to-pink-500 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-3 shadow-lg">
+                  🔴
+                </div>
+                <p className="text-lg font-bold text-red-700 mb-1">
+                  Fully Booked
+                </p>
+                <p className="text-sm text-red-600">
+                  All servings have been claimed
+                </p>
+              </div>
+            ) : donation.status === "partially_claimed" && !canApply ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-3 shadow-lg">
+                  ⚡
+                </div>
+                <p className="text-lg font-bold text-yellow-700 mb-1">
+                  Limited Stock
+                </p>
+                <p className="text-sm text-yellow-600">
+                  Some servings still available
+                </p>
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-gray-400 to-slate-500 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-3 shadow-lg">
+                  ✅
+                </div>
+                <p className="text-lg font-bold text-gray-700 mb-1">
+                  Not Available
+                </p>
+                <p className="text-sm text-gray-600">
+                  {donation.status === "claimed"
+                    ? "This donation has been claimed"
+                    : "This donation is completed"}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
 
       {/* Contact Details Modal */}
       {showDetails && (
@@ -331,7 +358,9 @@ const DonationCard = ({ donation, onApply }) => {
                   <span className="text-xl">📍</span>
                   <strong className="text-green-800">Pickup Location</strong>
                 </div>
-                <p className="text-green-700 font-medium">{donation.location}</p>
+                <p className="text-green-700 font-medium">
+                  {donation.location}
+                </p>
               </div>
 
               <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-2xl p-4 border border-orange-100">
@@ -339,7 +368,9 @@ const DonationCard = ({ donation, onApply }) => {
                   <span className="text-xl">📱</span>
                   <strong className="text-orange-800">Contact Details</strong>
                 </div>
-                <p className="text-orange-700 font-medium">{donation.contactInfo}</p>
+                <p className="text-orange-700 font-medium">
+                  {donation.contactInfo}
+                </p>
               </div>
 
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-4 border border-purple-100">
@@ -347,7 +378,9 @@ const DonationCard = ({ donation, onApply }) => {
                   <span className="text-xl">👤</span>
                   <strong className="text-purple-800">Donor</strong>
                 </div>
-                <p className="text-purple-700 font-medium">{donation.donorName || "Anonymous Donor"}</p>
+                <p className="text-purple-700 font-medium">
+                  {donation.donorName || "Anonymous Donor"}
+                </p>
               </div>
             </div>
 
