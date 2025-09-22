@@ -9,7 +9,6 @@ const SearchFilters = ({ filters, onFilterChange, totalResults }) => {
     const newFilters = { ...localFilters, [key]: value };
     setLocalFilters(newFilters);
 
-    // Debounce search input, apply others immediately
     if (key === "search") {
       if (searchDebounceTimeout) {
         clearTimeout(searchDebounceTimeout);
@@ -25,7 +24,6 @@ const SearchFilters = ({ filters, onFilterChange, totalResults }) => {
     }
   };
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (searchDebounceTimeout) {
@@ -47,7 +45,6 @@ const SearchFilters = ({ filters, onFilterChange, totalResults }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
       <div className="flex flex-col lg:flex-row gap-4">
-        {/* Search */}
         <div className="flex-1">
           <label
             htmlFor="search"
@@ -65,7 +62,6 @@ const SearchFilters = ({ filters, onFilterChange, totalResults }) => {
           />
         </div>
 
-        {/* Status Filter */}
         <div className="lg:w-48">
           <label
             htmlFor="status"
@@ -86,7 +82,6 @@ const SearchFilters = ({ filters, onFilterChange, totalResults }) => {
           </select>
         </div>
 
-        {/* Distance Filter */}
         <div className="lg:w-48">
           <label
             htmlFor="distance"
@@ -111,7 +106,6 @@ const SearchFilters = ({ filters, onFilterChange, totalResults }) => {
           </select>
         </div>
 
-        {/* Clear Filters Button */}
         <div className="lg:w-auto flex items-end">
           <button
             onClick={clearFilters}
@@ -122,7 +116,6 @@ const SearchFilters = ({ filters, onFilterChange, totalResults }) => {
         </div>
       </div>
 
-      {/* Results Count */}
       <div className="mt-4 pt-4 border-t border-gray-200">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <p className="text-sm text-gray-600">
@@ -132,7 +125,6 @@ const SearchFilters = ({ filters, onFilterChange, totalResults }) => {
             {localFilters.search && ` matching "${localFilters.search}"`}
           </p>
 
-          {/* Active Filters */}
           {(localFilters.search ||
             localFilters.status !== "available" ||
             localFilters.maxDistance !== 50) && (
@@ -176,7 +168,6 @@ const SearchFilters = ({ filters, onFilterChange, totalResults }) => {
           )}
         </div>
 
-        {/* Quick Filter Suggestions */}
         {totalResults === 0 && !localFilters.search && (
           <div className="mt-4 p-4 bg-yellow-50 rounded-xl border border-yellow-200">
             <p className="text-sm text-yellow-800 mb-3">
