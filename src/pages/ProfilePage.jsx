@@ -846,7 +846,7 @@ const ProfilePage = () => {
                 </div>
               </div>
             </div>
-
+            {/* Test */}
             {hasHousehold &&
               (profileView === "applicant" || profileView === "overview") && (
                 <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border-2 border-blue-100">
@@ -875,6 +875,7 @@ const ProfilePage = () => {
               )}
           </div>
 
+          {/* Beautiful Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {(() => {
               const stats = getViewStats();
