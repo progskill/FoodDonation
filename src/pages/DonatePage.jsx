@@ -112,7 +112,6 @@ const DonatePage = () => {
           targetRequestType: requestInfo.targetRequestType || "",
         }));
 
-        // Find and set the selected request
         const targetRequest = requests.find(
           (r) =>
             r.id === requestInfo.targetRequestId &&
@@ -122,7 +121,6 @@ const DonatePage = () => {
           setSelectedRequest(targetRequest);
         }
 
-        // Clear the session storage
         sessionStorage.removeItem("donateToRequest");
       } catch (error) {
         console.error("Error parsing donate request data:", error);
@@ -201,7 +199,6 @@ const DonatePage = () => {
 
       const docRef = await addDoc(collection(db, "donations"), donationData);
 
-      // If this donation is targeting a specific request, mark the request as fulfilled
       if (formData.targetRequestId && formData.targetRequestType) {
         try {
           const requestCollection =
@@ -260,7 +257,6 @@ const DonatePage = () => {
     <ProtectedRoute message="You need to create an account to share food donations with the community. This helps us maintain security and track donations properly.">
       <div className="min-h-screen py-8 px-4 bg-gradient-to-br from-green-50 via-white to-blue-50">
         <div className="max-w-4xl mx-auto">
-          {/* Progress Header */}
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-blue-600 mb-4">
               {donationType === "food"
@@ -273,7 +269,6 @@ const DonatePage = () => {
                 : "Your financial contribution helps us serve the community better"}
             </p>
 
-            {/* Donation Type Selection */}
             <div className="mb-6">
               <div className="inline-flex bg-white/70 backdrop-blur-sm rounded-2xl p-2 border-2 border-gray-200 shadow-lg">
                 <button
@@ -299,7 +294,6 @@ const DonatePage = () => {
               </div>
             </div>
 
-            {/* Browse Requests Link - Only show for food donations */}
             {donationType === "food" && (
               <div className="mb-8">
                 <a
@@ -314,7 +308,6 @@ const DonatePage = () => {
               </div>
             )}
 
-            {/* Progress Steps - Only show for food donations */}
             {donationType === "food" && (
               <>
                 <div className="flex justify-center items-center space-x-4 mb-8">
@@ -356,7 +349,6 @@ const DonatePage = () => {
               <CashDonation />
             ) : (
               <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Step 1: Food Details */}
                 {currentStep === 1 && (
                   <div className="space-y-6 animate-fade-in">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
@@ -366,7 +358,6 @@ const DonatePage = () => {
                       Tell us about your food
                     </h2>
 
-                    {/* Request Selection Dropdown */}
                     <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl border-2 border-blue-200">
                       <label className="block text-sm font-semibold text-blue-800 mb-3">
                         🎯 Are you donating to fulfill a specific request?
@@ -470,7 +461,6 @@ const DonatePage = () => {
                         needs exactly what you're offering!
                       </p>
                     </div>
-                    {/* Food Item */}
                     <div className="grid md:grid-cols-2 gap-6">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -487,7 +477,6 @@ const DonatePage = () => {
                         />
                       </div>
 
-                      {/* Quantity */}
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
                           📊 How much? (servings/portions) *
@@ -505,7 +494,6 @@ const DonatePage = () => {
                       </div>
                     </div>
 
-                    {/* Expiration & Available Until */}
                     <div className="grid md:grid-cols-2 gap-6">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -536,7 +524,6 @@ const DonatePage = () => {
                       </div>
                     </div>
 
-                    {/* Pickup Preference */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
                         🚗 Pickup preference
@@ -586,7 +573,6 @@ const DonatePage = () => {
                       </div>
                     </div>
 
-                    {/* Description */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
                         📝 Additional details
