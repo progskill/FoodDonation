@@ -6,7 +6,6 @@ import {
   serverTimestamp,
   query,
   onSnapshot,
-  orderBy,
   updateDoc,
   doc,
 } from "firebase/firestore";
@@ -44,7 +43,6 @@ const DonatePage = () => {
 
   // Load requests for the dropdown
   useEffect(() => {
-    // Load both regular requests and custom food requests
     const regularRequestsQuery = query(collection(db, "requests"));
 
     const customRequestsQuery = query(collection(db, "food-requests"));
@@ -54,7 +52,6 @@ const DonatePage = () => {
       snapshot.forEach((doc) => {
         const data = doc.data();
         if (data.status === "open") {
-          // Only show open requests
           regularRequests.push({
             id: doc.id,
             ...data,
@@ -68,7 +65,6 @@ const DonatePage = () => {
         snapshot.forEach((doc) => {
           const data = doc.data();
           if (data.status === "open") {
-            // Only show open requests
             customRequests.push({
               id: doc.id,
               ...data,
@@ -77,7 +73,6 @@ const DonatePage = () => {
           }
         });
 
-        // Combine and sort all requests
         const allRequests = [...regularRequests, ...customRequests];
 
         // Sort by urgency first, then by creation date
@@ -87,7 +82,7 @@ const DonatePage = () => {
           const bUrgency = urgencyOrder[b.urgency] || 1;
 
           if (aUrgency !== bUrgency) {
-            return bUrgency - aUrgency; // Higher urgency first
+            return bUrgency - aUrgency;
           }
 
           const aDate = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
@@ -104,7 +99,6 @@ const DonatePage = () => {
     return () => unsubscribeRegular();
   }, []);
 
-  // Check for pre-filled data from requests page
   useEffect(() => {
     const donateToRequestData = sessionStorage.getItem("donateToRequest");
     if (donateToRequestData) {
