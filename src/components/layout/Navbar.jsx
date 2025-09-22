@@ -68,16 +68,6 @@ const Navbar = () => {
                 Donate Food
               </Link>
               <Link
-                to="/receive"
-                className={`hover:text-primary-600 transition-colors ${
-                  isActivePath("/receive")
-                    ? "text-primary-600 font-medium"
-                    : "text-gray-700"
-                }`}
-              >
-                Request Food
-              </Link>
-              <Link
                 to="/requests"
                 className={`hover:text-primary-600 transition-colors ${
                   isActivePath("/requests")
