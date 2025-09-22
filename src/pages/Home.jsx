@@ -49,7 +49,6 @@ const Home = () => {
           </div>
         </section>
 
-        {/* Features Section */}
         <section className="py-16 px-4">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">
@@ -87,7 +86,6 @@ const Home = () => {
           </div>
         </section>
 
-        {/* Stats Section */}
         <section className="py-16 px-4 bg-primary-600 text-white">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold mb-8">
