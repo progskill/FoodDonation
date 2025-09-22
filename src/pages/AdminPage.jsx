@@ -14,6 +14,7 @@ import { db } from "../config/firebase";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotification } from "../contexts/NotificationContext";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
+import { D3BarChart, D3PieChart, D3LineChart, D3DonutChart } from "../components/charts";
 
 const AdminPage = () => {
   const { currentUser } = useAuth();
@@ -746,31 +747,66 @@ const AdminPage = () => {
               </div>
             </div>
 
-            {/* Charts Row */}
+            {/* Interactive Charts Row */}
             <div className="grid md:grid-cols-2 gap-6">
-              <SimpleBarChart
+              <D3BarChart
                 data={chartData.daily?.donations || []}
                 labels={chartData.daily?.labels || []}
                 title="📈 Daily Donations (Last 7 Days)"
                 color="#10B981"
+                height={300}
+                width={500}
+                showTooltip={true}
+                animationDuration={750}
               />
-              <SimpleBarChart
+              <D3BarChart
                 data={chartData.daily?.requests || []}
                 labels={chartData.daily?.labels || []}
                 title="📊 Daily Requests (Last 7 Days)"
                 color="#3B82F6"
+                height={300}
+                width={500}
+                showTooltip={true}
+                animationDuration={750}
               />
             </div>
 
-            {/* Status Distribution Charts */}
+            {/* Combined Line Chart */}
+            <div className="grid grid-cols-1 gap-6">
+              <D3LineChart
+                data={{
+                  labels: chartData.daily?.labels || [],
+                  donations: chartData.daily?.donations || [],
+                  requests: chartData.daily?.requests || []
+                }}
+                title="📊 Daily Activity Trends (Last 7 Days)"
+                height={350}
+                width={800}
+                showTooltip={true}
+                animationDuration={1000}
+                colors={["#10B981", "#3B82F6"]}
+              />
+            </div>
+
+            {/* Interactive Status Distribution Charts */}
             <div className="grid md:grid-cols-2 gap-6">
-              <SimplePieChart
+              <D3DonutChart
                 data={chartData.statusDistribution?.donations || {}}
                 title="🎁 Donation Status Distribution"
+                width={400}
+                height={400}
+                showTooltip={true}
+                showCenterText={true}
+                animationDuration={750}
               />
-              <SimplePieChart
+              <D3PieChart
                 data={chartData.statusDistribution?.requests || {}}
                 title="📝 Request Status Distribution"
+                width={400}
+                height={400}
+                showTooltip={true}
+                showLegend={true}
+                animationDuration={750}
               />
             </div>
 
